@@ -13,11 +13,8 @@ export function initInstallButton(btnId: string, fallbackElId: string) {
     e.preventDefault()
     deferred = e as BeforeInstallPromptEvent
     if (btn) {
-      btn.style.display = 'inline-block'
       btn.textContent = 'Install app'
     }
-    // Hide manual fallback when prompt is available
-    if (fallback) fallback.style.display = 'none'
   })
 
   window.addEventListener('appinstalled', () => {
@@ -40,10 +37,10 @@ export function initInstallButton(btnId: string, fallbackElId: string) {
           setTimeout(() => { btn.style.display = 'none' }, 2000)
         }
       } else {
-        // No deferred prompt (e.g. in-app browser or already eligible via menu):
-        // show manual instructions. iOS Safari uses Share > Add to Home Screen.
+        // No deferred prompt (Chrome usually fires it only after a user
+        // interaction; capture the signal above). Show the manual steps.
         if (fallback) fallback.style.display = 'block'
-        btn.textContent = 'Use Chrome menu › Add to Home screen'
+        btn.textContent = 'See Chrome menu to install'
       }
     })
   }

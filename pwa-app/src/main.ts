@@ -4,19 +4,19 @@ import { requestPermission, notifyNewDay } from './notify'
 import { initInstallButton } from './install'
 import { initPWA } from './pwa'
 
-initPWA()
-initInstallButton('install', 'install-steps')
-
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
   <main>
     <header>
       <h1>EURUSD Daily Levels</h1>
       <p id="meta">Loading…</p>
-      <button id="notify">Enable daily notifications</button>
-      <button id="install" style="display:none">Install app</button>
-      <div id="install-steps" style="display:none;margin-top:10px">
+      <div class="actions">
+        <button id="notify">Enable daily notifications</button>
+        <button id="install">Install app</button>
+      </div>
+      <div id="install-steps" style="margin-top:10px">
         <p><strong>Android Chrome:</strong> tap ⋮ menu → <em>Add to Home screen</em> or <em>Install app</em>.</p>
+        <p><strong>Note:</strong> "Install app" prompt appears in Chrome after the page is interacted with at least once. If you don't see it, use the menu above.</p>
         <p><strong>iPhone Safari:</strong> Share → Add to Home Screen.</p>
       </div>
     </header>
@@ -24,6 +24,9 @@ app.innerHTML = `
     <footer><small>UTC day boundary (forex). Levels only, no entries. Offline cached.</small></footer>
   </main>
 `
+
+initPWA()
+initInstallButton('install', 'install-steps')
 
 async function load() {
   // request permission early so Android allows notifications
