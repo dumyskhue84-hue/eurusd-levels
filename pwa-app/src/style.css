@@ -1,0 +1,15 @@
+:root { color-scheme: dark; }
+body { margin:0; font-family: system-ui, sans-serif; background:#0f1419; color:#e7e9ea; }
+main { max-width: 560px; margin: 0 auto; padding: 16px; }
+header h1 { font-size: 20px; margin: 8px 0; }
+#meta { opacity: .8; font-size: 13px; }
+button { margin-top: 10px; padding: 10px 14px; border-radius: 999px; border: 1px solid #2f3336; background:#1d9bf0; color:white; font-weight: 600; cursor:pointer; }
+button:disabled { opacity:.6; }
+#cards { display:grid; gap:10px; margin-top:16px; }
+.card { background:#17202a; border:1px solid #2f3336; border-radius:12px; padding:12px; }
+.card.primary { border-color:#1d9bf0; }
+.price { font-size: 18px; font-weight: 700; }
+.type { font-size: 13px; opacity:.85; }
+.zone { font-size: 13px; margin-top: 4px; }
+.respect, .expiry { font-size: 12px; opacity:.7; margin-top:4px; }
+footer { margin-top: 24px; opacity:.6; }

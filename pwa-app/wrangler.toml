@@ -1,0 +1,7 @@
+name = "eurusd-levels"
+compatibility_date = "2024-11-30"
+pages_build_output_dir = "dist"
+
+# Daily levels cron: call generate script via Workers Scheduled Cron
+# Point this to your repo's GitHub Actions or a scheduled Worker.
+# This file is the Cloudflare Pages deployment config.

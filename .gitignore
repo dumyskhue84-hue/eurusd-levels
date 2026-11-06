@@ -1,0 +1,14 @@
+data/raw/
+data/processed/
+__pycache__/
+*.pyc
+charts/
+node_modules/
+pwa-app/node_modules/
+pwa-app/dist/
+.wrangler/
+*.part
+levels/*.parquet
+levels/*.csv
+explore_levels.py
+AppData/

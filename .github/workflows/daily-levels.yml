@@ -1,0 +1,28 @@
+name: Daily EURUSD levels (00:05 UTC)
+on:
+  schedule:
+    - cron: '5 0 * * *'   # 00:05 UTC daily
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - run: pip install pandas pyarrow requests
+      - run: python scripts/pipeline.py || true
+      - run: python scripts/daily_adaptive.py || true
+      - run: python scripts/generate_levels_json.py
+      - run: cp public/levels.json pwa-app/public/levels.json
+      - uses: actions/upload-artifact@v4
+        with: { name: levels, path: pwa-app/public/levels.json }
+      # Deploy to Cloudflare Pages via wrangler
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci --prefix pwa-app && npm run build --prefix pwa-app
+        env: { CI: 'true' }
+      - run: npx wrangler pages deploy pwa-app/dist --project-name=eurusd-levels
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
