@@ -1,0 +1,40 @@
+/// <reference lib="webworker" />
+import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching'
+
+declare const self: ServiceWorkerGlobalScope
+
+precacheAndRoute(self.__WB_MANIFEST)
+cleanupOutdatedCaches()
+
+self.addEventListener('install', (e: ExtendableEvent) => {
+  e.waitUntil(
+    caches.open('levels-json').then((c) => c.add('/levels.json').catch(() => undefined))
+  )
+  self.skipWaiting()
+})
+
+self.addEventListener('activate', (e: ExtendableEvent) => {
+  e.waitUntil(self.clients.claim())
+})
+
+self.addEventListener('notificationclick', (event: ExtendableEvent) => {
+  const ne = event as unknown as { notification: Notification }
+  ne.notification.close()
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window' }).then((cs: readonly unknown[]) => {
+      const c = cs[0] as WindowClient | undefined
+      return c ? c.focus() : self.clients.openWindow('/')
+    })
+  )
+})
+
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  const d = (event.data as unknown) as { type?: string; date?: string; n?: number } | undefined
+  if (d && d.type === 'NEW_DAY') {
+    void self.registration.showNotification(`EURUSD levels for ${d.date ?? ''}`, {
+      body: `${d.n ?? 0} levels ready. Tap to view.`,
+      icon: '/icon-192.png',
+      tag: `levels-${d.date ?? ''}`,
+    })
+  }
+})

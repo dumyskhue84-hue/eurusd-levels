@@ -17,12 +17,20 @@ jobs:
       - run: cp public/levels.json pwa-app/public/levels.json
       - uses: actions/upload-artifact@v4
         with: { name: levels, path: pwa-app/public/levels.json }
-      # Deploy to Cloudflare Pages via wrangler
+      # Deploy to Cloudflare Pages via wrangler — npm modern syntax,
+      # PWA plugins + sharp must be available for icon generation
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
       - run: npm ci --prefix pwa-app && npm run build --prefix pwa-app
         env: { CI: 'true' }
-      - run: npx wrangler pages deploy pwa-app/dist --project-name=eurusd-levels
+      - run: |
+          npx wrangler --version || true
+          npx wrangler pages deploy pwa-app/dist --project-name=eurusd-levels
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - run: |
+          npm --prefix pwa-app test || true
+          curl -s https://eurusd-levels.pages.dev/manifest.webmanifest | head -c 200
+          echo
+          curl -sI https://eurusd-levels.pages.dev/icon-192.png | head -n 5

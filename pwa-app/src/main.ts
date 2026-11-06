@@ -1,6 +1,11 @@
 import './style.css'
 import type { LevelsFile } from './level-types'
 import { requestPermission, notifyNewDay } from './notify'
+import { initInstallButton } from './install'
+import { initPWA } from './pwa'
+
+initPWA()
+initInstallButton('install', 'install-steps')
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
@@ -9,6 +14,11 @@ app.innerHTML = `
       <h1>EURUSD Daily Levels</h1>
       <p id="meta">Loading…</p>
       <button id="notify">Enable daily notifications</button>
+      <button id="install" style="display:none">Install app</button>
+      <div id="install-steps" style="display:none;margin-top:10px">
+        <p><strong>Android Chrome:</strong> tap ⋮ menu → <em>Add to Home screen</em> or <em>Install app</em>.</p>
+        <p><strong>iPhone Safari:</strong> Share → Add to Home Screen.</p>
+      </div>
     </header>
     <section id="cards"></section>
     <footer><small>UTC day boundary (forex). Levels only, no entries. Offline cached.</small></footer>
