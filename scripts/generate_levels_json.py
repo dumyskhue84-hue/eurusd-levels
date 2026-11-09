@@ -48,6 +48,13 @@ def main():
     i = len(d) - 1  # levels for NEXT day after last bar
     # if today is past the last bar's day, levels are for the coming day
     target = d.index[-1] + pd.Timedelta(days=1)
+    # staleness check: fail if data is >1 day behind (HistData monthly lag)
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    gap_days = (today - d.index[-1].date()).days
+    if gap_days > 1:
+        print(f"WARNING: data is {gap_days} days stale (last bar {d.index[-1].date()}, today {today}) — HistData may not have published the current month yet.", flush=True)
+        print(f"levels will still be generated for {target.date()} (next day after last bar), but may be stale vs today.", flush=True)
     cands, pc, A = da.candidates(i, d, df5)
     kept = da.prune(cands, pc, A)
     zone = 0.25 * A

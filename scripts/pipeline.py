@@ -21,11 +21,36 @@ UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.3
 PAIR = "EURUSD"
 TIMEFRAME = "M1"
 PLATFORM = "ASCII"
-YEARS = list(range(2020, 2026))          # 2020..2025 full-year files
-MONTHS_2026 = list(range(1, 11))           # 2026-01..10
-# (label, date_value_for_form, datemonth_value, listing_suffix)
-TARGETS = [(str(y), str(y), str(y), str(y)) for y in YEARS] + \
-          [(f"2026-{m:02d}", "2026", f"2026{m:02d}", f"2026/{m}") for m in MONTHS_2026]
+
+def build_targets():
+    """Dynamic target list: yearly files 2020..<current> + monthly for the
+    current year (current month + prior month overlap for publish lag).
+    HistData still publishes yearly files for past years and monthly for 2026+,
+    so yearly targets stop at the current year. This never hardcodes an end month."""
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    cur_year = today.year
+    years = list(range(2020, cur_year))  # 2020..<current> yearly files
+    targets = [(str(y), str(y), str(y), str(y)) for y in years]
+    # monthly: current month and prior month (in case current not yet published)
+    seen = set()
+    for offset in (0, 1):  # current, prior
+        y, m = today.year, today.month - offset
+        while m <= 0:
+            m += 12; y -= 1
+        label = f"{y}-{m:02d}"
+        if label in seen:
+            continue
+        seen.add(label)
+        targets.append((label, str(y), f"{y}{m:02d}", f"{y}/{m}"))
+        if m == 1 and y >= 2020:
+            break
+    # also ensure at least the last two monthly files exist for steady state
+    # (if current month zip is 404, download_one returns None and we keep
+    # the prior month which is already cached)
+    return targets
+
+TARGETS = build_targets()
 
 def listing_url(date_val: str, datemonth: str, suffix: str) -> str:
     return f"https://www.histdata.com/download-free-forex-historical-data/?/{PLATFORM.lower()}/1-minute-bar-quotes/eurusd/{suffix}"
@@ -137,6 +162,7 @@ def main():
         parts.append(m1)
         print(f"{zp.name}: {len(m1):,} M1 rows, {m1.timestamp.min()} -> {m1.timestamp.max()}", flush=True)
     if not parts:
+        print("No data parsed.")
         return
     m1all = pd.concat(parts, ignore_index=True).drop_duplicates(subset="timestamp").sort_values("timestamp")
     print(f"Combined M1: {len(m1all):,}", flush=True)
