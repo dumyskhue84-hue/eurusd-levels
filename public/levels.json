@@ -1,31 +1,85 @@
 {
   "pair": "EURUSD",
-  "date": "2026-10-31",
-  "generated_from": "2026-10-30",
-  "anchor_close": 1.11864,
-  "atr": 0.00598,
-  "atr_pips": 59.8,
+  "date": "2026-11-10",
+  "generated_from": "2026-11-09",
+  "anchor_close": 1.11433,
+  "atr": 0.00599,
+  "atr_pips": 59.9,
   "zone_pips": 15.0,
   "timezone": "UTC",
   "history_days": 180,
   "levels": [
     {
-      "price": 1.11864,
+      "price": 1.11433,
       "type": "PC",
       "note": "prior close",
-      "approach_side": "from_below",
-      "zone_low": 1.11714,
-      "zone_high": 1.12014,
+      "approach_side": "from_above",
+      "zone_low": 1.11283,
+      "zone_high": 1.11583,
       "zone_pips": 15.0,
-      "expiry": "2026-11-05",
+      "expiry": "2026-11-15",
       "respect": {
-        "touches": 29,
+        "touches": 9,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.304,
-        "last_test": "2026-10-30 00:00:00+00:00"
+        "median_exc_atr": 0.294,
+        "last_test": "2026-11-09 00:00:00+00:00"
       },
       "primary": false
+    },
+    {
+      "price": 1.11609,
+      "type": "PIVL",
+      "note": "60d pivot low",
+      "approach_side": "from_above",
+      "zone_low": 1.11459,
+      "zone_high": 1.11759,
+      "zone_pips": 15.0,
+      "expiry": "2026-11-15",
+      "respect": {
+        "touches": 6,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.313,
+        "last_test": "2026-11-09 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.1125,
+      "type": "ROUND",
+      "note": "25-pip",
+      "approach_side": "from_above",
+      "zone_low": 1.111,
+      "zone_high": 1.114,
+      "zone_pips": 15.0,
+      "expiry": "2026-11-15",
+      "respect": {
+        "touches": 5,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.288,
+        "last_test": "2026-10-29 00:00:00+00:00"
+      },
+      "primary": false
+    },
+    {
+      "price": 1.11132,
+      "type": "PIVL",
+      "note": "60d pivot low",
+      "approach_side": "from_above",
+      "zone_low": 1.10982,
+      "zone_high": 1.11282,
+      "zone_pips": 15.0,
+      "expiry": "2026-11-15",
+      "respect": {
+        "touches": 2,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.285,
+        "last_test": "2026-10-28 00:00:00+00:00"
+      },
+      "primary": true
     },
     {
       "price": 1.1175,
@@ -35,157 +89,103 @@
       "zone_low": 1.116,
       "zone_high": 1.119,
       "zone_pips": 15.0,
-      "expiry": "2026-11-05",
+      "expiry": "2026-11-15",
       "respect": {
-        "touches": 62,
-        "reject_rate": 0.968,
-        "break_rate": 0.032,
-        "median_exc_atr": 0.289,
-        "last_test": "2026-10-30 00:00:00+00:00"
+        "touches": 36,
+        "reject_rate": 0.972,
+        "break_rate": 0.028,
+        "median_exc_atr": 0.283,
+        "last_test": "2026-11-09 00:00:00+00:00"
       },
       "primary": false
     },
     {
-      "price": 1.12,
-      "type": "ROUND",
-      "note": "25-pip",
-      "approach_side": "from_below",
-      "zone_low": 1.1185,
-      "zone_high": 1.1215,
-      "zone_pips": 15.0,
-      "expiry": "2026-11-05",
-      "respect": {
-        "touches": 37,
-        "reject_rate": 0.973,
-        "break_rate": 0.027,
-        "median_exc_atr": 0.286,
-        "last_test": "2026-10-30 00:00:00+00:00"
-      },
-      "primary": false
-    },
-    {
-      "price": 1.11625,
-      "type": "RUNG_DN",
-      "note": "PC-0.4A",
-      "approach_side": "from_below",
-      "zone_low": 1.11475,
-      "zone_high": 1.11774,
-      "zone_pips": 15.0,
-      "expiry": "2026-11-05",
-      "respect": {
-        "touches": 41,
-        "reject_rate": 0.976,
-        "break_rate": 0.024,
-        "median_exc_atr": 0.314,
-        "last_test": "2026-10-30 00:00:00+00:00"
-      },
-      "primary": true
-    },
-    {
-      "price": 1.12103,
-      "type": "RUNG_UP",
-      "note": "PC+0.4A",
-      "approach_side": "from_below",
-      "zone_low": 1.11954,
-      "zone_high": 1.12253,
-      "zone_pips": 15.0,
-      "expiry": "2026-11-05",
-      "respect": {
-        "touches": 32,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.299,
-        "last_test": "2026-10-30 00:00:00+00:00"
-      },
-      "primary": true
-    },
-    {
-      "price": 1.115,
+      "price": 1.11,
       "type": "ROUND",
       "note": "25-pip",
       "approach_side": "from_above",
-      "zone_low": 1.1135,
-      "zone_high": 1.1165,
+      "zone_low": 1.1085,
+      "zone_high": 1.1115,
       "zone_pips": 15.0,
-      "expiry": "2026-11-05",
+      "expiry": "2026-11-15",
       "respect": {
-        "touches": 47,
-        "reject_rate": 0.957,
-        "break_rate": 0.043,
-        "median_exc_atr": 0.301,
-        "last_test": "2026-10-30 00:00:00+00:00"
-      },
-      "primary": false
-    },
-    {
-      "price": 1.1225,
-      "type": "ROUND",
-      "note": "25-pip",
-      "approach_side": "from_below",
-      "zone_low": 1.121,
-      "zone_high": 1.124,
-      "zone_pips": 15.0,
-      "expiry": "2026-11-05",
-      "respect": {
-        "touches": 61,
+        "touches": 1,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.291,
-        "last_test": "2026-10-25 00:00:00+00:00"
+        "median_exc_atr": 0.357,
+        "last_test": "2025-05-13 00:00:00+00:00"
       },
       "primary": false
     },
     {
-      "price": 1.11385,
-      "type": "RUNG_DN",
-      "note": "PC-0.8A",
-      "approach_side": "from_above",
-      "zone_low": 1.11236,
-      "zone_high": 1.11535,
-      "zone_pips": 15.0,
-      "expiry": "2026-11-05",
-      "respect": {
-        "touches": 41,
-        "reject_rate": 0.976,
-        "break_rate": 0.024,
-        "median_exc_atr": 0.31,
-        "last_test": "2026-10-30 00:00:00+00:00"
-      },
-      "primary": true
-    },
-    {
-      "price": 1.12343,
+      "price": 1.11912,
       "type": "RUNG_UP",
       "note": "PC+0.8A",
       "approach_side": "from_below",
-      "zone_low": 1.12193,
-      "zone_high": 1.12492,
+      "zone_low": 1.11763,
+      "zone_high": 1.12062,
       "zone_pips": 15.0,
-      "expiry": "2026-11-05",
+      "expiry": "2026-11-15",
       "respect": {
-        "touches": 40,
+        "touches": 18,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.299,
-        "last_test": "2026-10-13 00:00:00+00:00"
+        "median_exc_atr": 0.292,
+        "last_test": "2026-11-02 00:00:00+00:00"
       },
       "primary": true
     },
     {
-      "price": 1.11146,
+      "price": 1.10714,
       "type": "RUNG_DN",
       "note": "PC-1.2A",
       "approach_side": "from_above",
-      "zone_low": 1.10996,
-      "zone_high": 1.11295,
+      "zone_low": 1.10564,
+      "zone_high": 1.10864,
       "zone_pips": 15.0,
-      "expiry": "2026-11-05",
+      "expiry": "2026-11-15",
       "respect": {
-        "touches": 54,
-        "reject_rate": 0.963,
-        "break_rate": 0.037,
-        "median_exc_atr": 0.306,
-        "last_test": "2026-10-27 00:00:00+00:00"
+        "touches": 4,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.378,
+        "last_test": "2025-05-13 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.12152,
+      "type": "RUNG_UP",
+      "note": "PC+1.2A",
+      "approach_side": "from_below",
+      "zone_low": 1.12002,
+      "zone_high": 1.12302,
+      "zone_pips": 15.0,
+      "expiry": "2026-11-15",
+      "respect": {
+        "touches": 20,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.3,
+        "last_test": "2026-11-03 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.12372,
+      "type": "PDH",
+      "note": "prior day high",
+      "approach_side": "from_below",
+      "zone_low": 1.12222,
+      "zone_high": 1.12522,
+      "zone_pips": 15.0,
+      "expiry": "2026-11-15",
+      "respect": {
+        "touches": 11,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.292,
+        "last_test": "2026-10-22 00:00:00+00:00"
       },
       "primary": true
     }

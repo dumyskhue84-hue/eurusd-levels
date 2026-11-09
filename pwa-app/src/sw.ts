@@ -17,6 +17,27 @@ self.addEventListener('activate', (e: ExtendableEvent) => {
   e.waitUntil(self.clients.claim())
 })
 
+// levels.json: network-first, fall back to cache
+self.addEventListener('fetch', (event: FetchEvent) => {
+  const url = new URL(event.request.url)
+  if (url.pathname === '/levels.json' && event.request.method === 'GET') {
+    event.respondWith(
+      fetch(event.request)
+        .then(async (res) => {
+          const copy = res.clone()
+          const cache = await caches.open('levels-json')
+          await cache.put(event.request, copy)
+          return res
+        })
+        .catch(async () => {
+          const cached = await caches.match(event.request)
+          if (cached) return cached
+          return new Response('offline', { status: 503 })
+        })
+    )
+  }
+})
+
 self.addEventListener('notificationclick', (event: ExtendableEvent) => {
   const ne = event as unknown as { notification: Notification }
   ne.notification.close()

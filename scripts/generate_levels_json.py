@@ -26,7 +26,7 @@ def touch_price(df5, level, zone):
     recent = df5.tail(288)["close"]  # last ~24h of 5m
     return "from_below" if recent.iloc[-1] < level else "from_above"
 
-def respect_stats(tests: pd.DataFrame, level: float, typ: str) -> dict:
+def respect_stats(tests: pd.DataFrame, level: float, typ: str, cutoff: int = 180) -> dict:
     """Aggregate stats from prior adaptive tests for this level+type."""
     if tests.empty:
         return {"touches": 0, "reject_rate": None, "break_rate": None,

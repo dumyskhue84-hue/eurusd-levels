@@ -19,6 +19,9 @@ app.innerHTML = `
         <p><strong>Note:</strong> "Install app" prompt appears in Chrome after the page is interacted with at least once. If you don't see it, use the menu above.</p>
         <p><strong>iPhone Safari:</strong> Share → Add to Home Screen.</p>
       </div>
+      <div id="stale" style="display:none;margin-top:10px;padding:10px;border:1px solid #b58900;border-radius:10px;background:#2a2300">
+        <strong>Levels may be stale.</strong> <span id="stale-msg"></span>
+      </div>
     </header>
     <section id="cards"></section>
     <footer><small>UTC day boundary (forex). Levels only, no entries. Offline cached.</small></footer>
@@ -36,6 +39,17 @@ async function load() {
   const data: LevelsFile = await res.json()
   document.querySelector('#meta')!.textContent =
     `${data.pair} · ${data.date} (UTC) · anchor ${data.anchor_close.toFixed(5)} · ATR ${data.atr_pips.toFixed(1)} pips · zone ±${data.zone_pips} pips · from ${data.generated_from}`
+
+  // staleness banner: date must be today (UTC) or tomorrow (if generated after 00:00)
+  const todayUTC = new Date().toISOString().slice(0, 10)
+  const stale = document.getElementById('stale')
+  const staleMsg = document.getElementById('stale-msg')
+  if (data.date !== todayUTC) {
+    stale!.style.display = 'block'
+    staleMsg!.textContent = `Levels generated for ${data.date} (today ${todayUTC}). Pull to refresh may be pending — data pipeline may be delayed.`
+  } else {
+    stale!.style.display = 'none'
+  }
 
   const cards = document.querySelector('#cards')!
   const show = data.levels.filter((l) => l.primary || l.type !== 'ROUND').slice(0, 10)
