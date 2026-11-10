@@ -52,7 +52,7 @@ async function load() {
   }
 
   const cards = document.querySelector('#cards')!
-  const show = data.levels.filter((l) => l.primary || l.type !== 'ROUND').slice(0, 10)
+  const show = data.levels
   cards.innerHTML = show.map((l) => `
     <article class="card ${l.primary ? 'primary' : ''}">
       <div class="price">${l.price.toFixed(5)}</div>
