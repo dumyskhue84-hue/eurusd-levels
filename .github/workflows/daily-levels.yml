@@ -8,6 +8,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Fail fast if the CF token can't deploy (Pages:Edit missing/expired)
+      - name: Preflight Cloudflare token (Pages:Edit)
+        run: |
+          code=$(curl -s -o cf_preflight.json -w '%{http_code}' -G \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/pages/projects/eurusd-levels/upload-token" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          echo "upload-token HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN cannot deploy (HTTP $code). It must be active with Account > Cloudflare Pages > Edit. Body:"
+            cat cf_preflight.json
+            exit 1
+          fi
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       - uses: actions/cache@v4
         with:
           path: |

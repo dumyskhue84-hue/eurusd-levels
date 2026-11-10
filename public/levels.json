@@ -1,101 +1,65 @@
 {
   "pair": "EURUSD",
-  "date": "2026-11-10",
-  "generated_from": "2026-11-09",
-  "anchor_close": 1.11383,
-  "atr": 0.00626,
-  "atr_pips": 62.6,
+  "date": "2026-11-11",
+  "generated_from": "2026-11-10",
+  "anchor_close": 1.1222,
+  "atr": 0.00622,
+  "atr_pips": 62.2,
   "zone_pips": 15.6,
   "timezone": "UTC",
   "history_days": 180,
   "levels": [
     {
-      "price": 1.11383,
+      "price": 1.1222,
       "type": "PC",
       "note": "prior close",
       "approach_side": "from_above",
-      "zone_low": 1.11227,
-      "zone_high": 1.11539,
+      "zone_low": 1.12064,
+      "zone_high": 1.12376,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
       "respect": {
-        "touches": 6,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.302,
-        "last_test": "2026-11-09 00:00:00+00:00"
+        "touches": 37,
+        "reject_rate": 0.946,
+        "break_rate": 0.054,
+        "median_exc_atr": 0.298,
+        "last_test": "2026-11-10 00:00:00+00:00"
       },
       "primary": false
     },
     {
-      "price": 1.115,
+      "price": 1.12,
       "type": "ROUND",
       "note": "25-pip",
       "approach_side": "from_above",
-      "zone_low": 1.11344,
-      "zone_high": 1.11656,
+      "zone_low": 1.11844,
+      "zone_high": 1.12156,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
-      "respect": {
-        "touches": 10,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.294,
-        "last_test": "2026-11-09 00:00:00+00:00"
-      },
-      "primary": false
-    },
-    {
-      "price": 1.1125,
-      "type": "ROUND",
-      "note": "25-pip",
-      "approach_side": "from_above",
-      "zone_low": 1.11094,
-      "zone_high": 1.11406,
-      "zone_pips": 15.6,
-      "expiry": "2026-11-15",
-      "respect": {
-        "touches": 3,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.412,
-        "last_test": "2026-10-29 00:00:00+00:00"
-      },
-      "primary": false
-    },
-    {
-      "price": 1.11609,
-      "type": "PIVL",
-      "note": "60d pivot low",
-      "approach_side": "from_above",
-      "zone_low": 1.11453,
-      "zone_high": 1.11765,
-      "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
       "respect": {
         "touches": 19,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.281,
-        "last_test": "2026-11-09 00:00:00+00:00"
+        "median_exc_atr": 0.282,
+        "last_test": "2026-11-05 00:00:00+00:00"
       },
-      "primary": true
+      "primary": false
     },
     {
-      "price": 1.11133,
-      "type": "RUNG_DN",
-      "note": "PC-0.4A",
-      "approach_side": "from_above",
-      "zone_low": 1.10976,
-      "zone_high": 1.11289,
+      "price": 1.12469,
+      "type": "RUNG_UP",
+      "note": "PC+0.4A",
+      "approach_side": "from_below",
+      "zone_low": 1.12313,
+      "zone_high": 1.12625,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
       "respect": {
-        "touches": 7,
+        "touches": 6,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.31,
-        "last_test": "2026-10-27 00:00:00+00:00"
+        "median_exc_atr": 0.324,
+        "last_test": "2026-11-10 00:00:00+00:00"
       },
       "primary": true
     },
@@ -107,7 +71,7 @@
       "zone_low": 1.11594,
       "zone_high": 1.11906,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
       "respect": {
         "touches": 38,
         "reject_rate": 1.0,
@@ -118,76 +82,112 @@
       "primary": false
     },
     {
-      "price": 1.11,
-      "type": "ROUND",
-      "note": "25-pip",
-      "approach_side": "from_above",
-      "zone_low": 1.10844,
-      "zone_high": 1.11156,
+      "price": 1.12711,
+      "type": "PIVH",
+      "note": "60d pivot high",
+      "approach_side": "from_below",
+      "zone_low": 1.12556,
+      "zone_high": 1.12867,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
+      "respect": {
+        "touches": 10,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.328,
+        "last_test": "2026-11-05 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.11609,
+      "type": "PIVL",
+      "note": "60d pivot low",
+      "approach_side": "from_above",
+      "zone_low": 1.11453,
+      "zone_high": 1.11765,
+      "zone_pips": 15.6,
+      "expiry": "2026-11-16",
+      "respect": {
+        "touches": 16,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.292,
+        "last_test": "2026-11-09 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.11473,
+      "type": "RUNG_DN",
+      "note": "PC-1.2A",
+      "approach_side": "from_above",
+      "zone_low": 1.11318,
+      "zone_high": 1.11629,
+      "zone_pips": 15.6,
+      "expiry": "2026-11-16",
+      "respect": {
+        "touches": 17,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.294,
+        "last_test": "2026-11-06 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.12967,
+      "type": "RUNG_UP",
+      "note": "PC+1.2A",
+      "approach_side": "from_below",
+      "zone_low": 1.12811,
+      "zone_high": 1.13122,
+      "zone_pips": 15.6,
+      "expiry": "2026-11-16",
+      "respect": {
+        "touches": 9,
+        "reject_rate": 1.0,
+        "break_rate": 0.0,
+        "median_exc_atr": 0.312,
+        "last_test": "2026-11-05 00:00:00+00:00"
+      },
+      "primary": true
+    },
+    {
+      "price": 1.11309,
+      "type": "L5",
+      "note": "5d low",
+      "approach_side": "from_above",
+      "zone_low": 1.11153,
+      "zone_high": 1.11465,
+      "zone_pips": 15.6,
+      "expiry": "2026-11-16",
       "respect": {
         "touches": 3,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.357,
-        "last_test": "2026-10-29 00:00:00+00:00"
-      },
-      "primary": false
-    },
-    {
-      "price": 1.10883,
-      "type": "RUNG_DN",
-      "note": "PC-0.8A",
-      "approach_side": "from_above",
-      "zone_low": 1.10726,
-      "zone_high": 1.11039,
-      "zone_pips": 15.6,
-      "expiry": "2026-11-15",
-      "respect": {
-        "touches": 5,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.31,
-        "last_test": "2026-10-14 00:00:00+00:00"
+        "median_exc_atr": 0.315,
+        "last_test": "2026-11-06 00:00:00+00:00"
       },
       "primary": true
     },
     {
-      "price": 1.11883,
+      "price": 1.13216,
       "type": "RUNG_UP",
-      "note": "PC+0.8A",
-      "approach_side": "from_above",
-      "zone_low": 1.11727,
-      "zone_high": 1.1204,
+      "note": "PC+1.6A",
+      "approach_side": "from_below",
+      "zone_low": 1.1306,
+      "zone_high": 1.13371,
       "zone_pips": 15.6,
-      "expiry": "2026-11-15",
+      "expiry": "2026-11-16",
       "respect": {
-        "touches": 6,
+        "touches": 2,
         "reject_rate": 1.0,
         "break_rate": 0.0,
-        "median_exc_atr": 0.28,
-        "last_test": "2026-11-09 00:00:00+00:00"
+        "median_exc_atr": 0.266,
+        "last_test": "2025-05-29 00:00:00+00:00"
       },
       "primary": true
-    },
-    {
-      "price": 1.12,
-      "type": "ROUND",
-      "note": "25-pip",
-      "approach_side": "from_below",
-      "zone_low": 1.11844,
-      "zone_high": 1.12156,
-      "zone_pips": 15.6,
-      "expiry": "2026-11-15",
-      "respect": {
-        "touches": 19,
-        "reject_rate": 1.0,
-        "break_rate": 0.0,
-        "median_exc_atr": 0.282,
-        "last_test": "2026-11-09 00:00:00+00:00"
-      },
-      "primary": false
     }
   ]
 }
