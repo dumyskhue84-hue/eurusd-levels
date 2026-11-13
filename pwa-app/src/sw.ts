@@ -8,7 +8,11 @@ cleanupOutdatedCaches()
 
 self.addEventListener('install', (e: ExtendableEvent) => {
   e.waitUntil(
-    caches.open('levels-json').then((c) => c.add('/levels.json').catch(() => undefined))
+    caches.open('levels-json').then((c) =>
+      Promise.all([
+        c.add('/levels.json').catch(() => undefined),
+        c.add('/bias.json').catch(() => undefined),
+      ]))
   )
   self.skipWaiting()
 })
@@ -17,10 +21,11 @@ self.addEventListener('activate', (e: ExtendableEvent) => {
   e.waitUntil(self.clients.claim())
 })
 
-// levels.json: network-first, fall back to cache
+// levels.json + bias.json: network-first, fall back to cache
 self.addEventListener('fetch', (event: FetchEvent) => {
   const url = new URL(event.request.url)
-  if (url.pathname === '/levels.json' && event.request.method === 'GET') {
+  const jsons = url.pathname === '/levels.json' || url.pathname === '/bias.json'
+  if (jsons && event.request.method === 'GET') {
     event.respondWith(
       fetch(event.request)
         .then(async (res) => {
@@ -50,10 +55,10 @@ self.addEventListener('notificationclick', (event: ExtendableEvent) => {
 })
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  const d = (event.data as unknown) as { type?: string; date?: string; n?: number } | undefined
+  const d = (event.data || {}) as { type?: string; date?: string; n?: number; bias?: string } | undefined
   if (d && d.type === 'NEW_DAY') {
     void self.registration.showNotification(`EURUSD levels for ${d.date ?? ''}`, {
-      body: `${d.n ?? 0} levels ready. Tap to view.`,
+      body: `${d.n ?? 0} levels ready, ATR updated.${d.bias ? ` Bias ${d.bias}.` : ''} Tap to view.`,
       icon: '/icon-192.png',
       tag: `levels-${d.date ?? ''}`,
     })

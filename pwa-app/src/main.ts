@@ -1,5 +1,5 @@
 import './style.css'
-import type { LevelsFile } from './level-types'
+import type { LevelsFile, BiasFile } from './level-types'
 import { requestPermission, notifyNewDay } from './notify'
 import { initInstallButton } from './install'
 import { initPWA } from './pwa'
@@ -23,6 +23,7 @@ app.innerHTML = `
         <strong>Levels may be stale.</strong> <span id="stale-msg"></span>
       </div>
     </header>
+    <section id="bias"></section>
     <section id="cards"></section>
     <footer><small>UTC day boundary (forex). Levels only, no entries. Offline cached.</small></footer>
   </main>
@@ -31,10 +32,64 @@ app.innerHTML = `
 initPWA()
 initInstallButton('install', 'install-steps')
 
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+
+const ARROW: Record<string, string> = { bullish: '▲', bearish: '▼', neutral: '●' }
+
+async function loadBias(): Promise<BiasFile | null> {
+  try {
+    const res = await fetch('/bias.json', { cache: 'no-cache' })
+    if (!res.ok) return null
+    const b: BiasFile = await res.json()
+    return b.bias ? b : null // null bias = feed error or no lean -> hide card
+  } catch {
+    return null
+  }
+}
+
+function renderBias(b: BiasFile) {
+  if (!b.bias) return
+  const el = document.querySelector('#bias')!
+  const win = `${b.window.start}–${b.window.end} ${b.window.tz}`
+  const target = b.target
+    ? `expect move toward <strong>${b.target.price.toFixed(5)}</strong> ${esc(b.target.type)}` +
+      ` · ${b.target.distance_pips} pips · approach ${b.target.approach_side.replace('_', ' ')}`
+    : 'no target level in bias direction'
+  const events = b.events.map((e) => {
+    const dir = e.watch ? '○' : e.vote > 0 ? '↑' : '↓'
+    const dirCls = e.watch ? 'watch' : e.vote > 0 ? 'up' : 'down'
+    const nums = (e.forecast || e.previous)
+      ? `<span class="nums">f ${esc(e.forecast) || '—'} · p ${esc(e.previous) || '—'}</span>`
+      : ''
+    return `<li class="ev${e.watch ? ' is-watch' : ''}">
+      <span class="ev-time">${e.time}</span>
+      <span class="imp ${e.impact.toLowerCase()}">${e.impact[0]}</span>
+      <span class="ev-title">${e.country} · ${esc(e.title)}</span>
+      <span class="ev-dir ${dirCls}">${dir}</span>
+      ${nums}
+    </li>`
+  }).join('')
+  el.innerHTML = `
+    <article class="card bias ${b.bias}">
+      <div class="bias-head">
+        <span class="bias-badge">${ARROW[b.bias] ?? '●'} ${b.bias.toUpperCase()}</span>
+        <span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span>
+      </div>
+      <div class="bias-win">news window ${win} · score ${b.score}</div>
+      <div class="bias-target">${target}</div>
+      <ul class="bias-events">${events}</ul>
+      <div class="bias-note">${esc(b.disclaimer)}</div>
+    </article>`
+}
+
 async function load() {
   // request permission early so Android allows notifications
   if (Notification.permission === 'default') { /* only on user tap */ }
-  const res = await fetch('/levels.json', { cache: 'no-cache' })
+  const [res, bias] = await Promise.all([
+    fetch('/levels.json', { cache: 'no-cache' }),
+    loadBias(),
+  ])
   if (!res.ok) throw new Error('levels.json not found')
   const data: LevelsFile = await res.json()
   document.querySelector('#meta')!.textContent =
@@ -65,16 +120,21 @@ async function load() {
     </article>
   `).join('')
 
+  if (bias) renderBias(bias)
+
   // daily notification: new date (new day starts 00:00 UTC)
   const lastDate = localStorage.getItem('levels-date')
   if (lastDate !== data.date) {
     localStorage.setItem('levels-date', data.date)
     if (Notification.permission === 'granted') {
-      notifyNewDay(data.date, data.levels.length)
+      const biasLabel = bias
+        ? `${bias.bias}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
+        : undefined
+      notifyNewDay(data.date, data.levels.length, biasLabel)
       // also nudge SW in case page is backgrounded
       if ('serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready
-        reg.active?.postMessage({ type: 'NEW_DAY', date: data.date, n: data.levels.length })
+        reg.active?.postMessage({ type: 'NEW_DAY', date: data.date, n: data.levels.length, bias: biasLabel })
       }
     }
   }

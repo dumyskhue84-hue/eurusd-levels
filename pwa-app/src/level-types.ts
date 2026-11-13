@@ -29,3 +29,39 @@ export interface LevelsFile {
   history_days: number
   levels: Level[]
 }
+
+export interface BiasEvent {
+  title: string
+  country: string
+  time: string
+  impact: 'High' | 'Medium'
+  forecast: string
+  previous: string
+  signal: string | null
+  vote: number
+  watch: boolean
+}
+
+export interface BiasTarget {
+  price: number
+  type: string
+  note: string
+  zone_low: number
+  zone_high: number
+  distance_pips: number
+  approach_side: string
+}
+
+export interface BiasFile {
+  pair: string
+  date: string
+  window: { start: string; end: string; tz: string }
+  bias: 'bullish' | 'bearish' | 'neutral' | null
+  confidence: number | null
+  score: number | null
+  events: BiasEvent[]
+  target: BiasTarget | null
+  generated_at: string
+  disclaimer: string
+  error?: string
+}

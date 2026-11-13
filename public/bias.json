@@ -1,0 +1,47 @@
+{
+  "pair": "EURUSD",
+  "date": "2026-11-13",
+  "window": {
+    "start": "12:00",
+    "end": "16:00",
+    "tz": "UTC"
+  },
+  "bias": "bullish",
+  "confidence": 1.0,
+  "score": 4,
+  "events": [
+    {
+      "title": "Core PPI m/m",
+      "country": "USD",
+      "time": "13:30",
+      "impact": "High",
+      "forecast": "0.3%",
+      "previous": "0.7%",
+      "signal": "usd_weak",
+      "vote": 1,
+      "watch": false
+    },
+    {
+      "title": "PPI m/m",
+      "country": "USD",
+      "time": "13:30",
+      "impact": "High",
+      "forecast": "0.4%",
+      "previous": "1.3%",
+      "signal": "usd_weak",
+      "vote": 1,
+      "watch": false
+    }
+  ],
+  "target": {
+    "price": 1.12469,
+    "type": "RUNG_UP",
+    "note": "PC+0.4A",
+    "zone_low": 1.12313,
+    "zone_high": 1.12625,
+    "distance_pips": 24.9,
+    "approach_side": "from_below"
+  },
+  "generated_at": "2026-11-13T06:45:53+00:00",
+  "disclaimer": "Calendar-based expectation, not a trading signal."
+}

@@ -29,6 +29,7 @@ jobs:
             ~/.cache/pip
             ~/.npm
             data/raw
+            data/cache
           key: ${{ runner.os }}-deps-histdata-${{ hashFiles('requirements.txt', 'pwa-app/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-deps-histdata-
@@ -49,9 +50,16 @@ jobs:
         run: python scripts/daily_adaptive.py
       - name: Generate levels.json (staleness warning if >1d)
         run: python scripts/generate_levels_json.py
-      - run: cp public/levels.json pwa-app/public/levels.json
+      - name: Generate bias.json (economic calendar)
+        run: python scripts/daily_bias.py
+        env: { PYTHONIOENCODING: 'utf-8' }
+      - run: cp public/levels.json public/bias.json pwa-app/public/
       - uses: actions/upload-artifact@v4
-        with: { name: levels, path: pwa-app/public/levels.json }
+        with:
+          name: levels
+          path: |
+            pwa-app/public/levels.json
+            pwa-app/public/bias.json
       - run: npm ci --prefix pwa-app && npm run build --prefix pwa-app
         env: { CI: 'true' }
       - name: Deploy to Cloudflare Pages
@@ -66,4 +74,7 @@ jobs:
           echo
           echo "--- levels.json ---"
           curl -s https://eurusd-levels.pages.dev/levels.json | head -c 400
+          echo
+          echo "--- bias.json ---"
+          curl -s https://eurusd-levels.pages.dev/bias.json | head -c 400
           echo

@@ -27,7 +27,9 @@ export default defineConfig({
         ],
       },
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,json,png,svg}'],
+        // json excluded: levels.json/bias.json are handled by the manual
+        // network-first fetch listener in sw.ts (precache would shadow it)
+        globPatterns: ['**/*.{js,css,html,png,svg}'],
       },
     }),
   ],
