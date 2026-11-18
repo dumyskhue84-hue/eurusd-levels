@@ -5,6 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {
   matchEvent, outcomeDir, composeOutcome, briefingDue, run,
+  headlineTone, parseRss, scoreHeadlines, biasState, detectBiasChange,
 } from '../src/index.js'
 
 // ---- fake environment ----
@@ -139,6 +140,25 @@ async function unitTests() {
   assert.equal(briefingDue(b2, now).toISOString(), '2026-11-16T08:00:00.000Z', '1h before first')
   const quiet = { ...BIAS, events: [] }
   assert.equal(briefingDue(quiet, now).toISOString(), '2026-11-16T06:00:00.000Z', 'quiet -> 06:00')
+
+  // --- live headline watch ---
+  assert.equal(headlineTone('Fed to hike rates 50bp'), 'hawkish')
+  assert.equal(headlineTone('Fed rejects December rate hike'), 'dovish')
+  assert.equal(headlineTone('Fed officials split on rate hike'), null)
+  const stamp = new Date().toUTCString()
+  const rss = `<rss><channel><item><title>Fed's Waller Urges Rate Hike - CNBC</title><pubDate>${stamp}</pubDate></item></channel></rss>`
+  assert.equal(parseRss(rss).length, 1, 'RSS item parsed')
+  const scored = scoreHeadlines(parseRss(rss).map((x) => ({ ...x, sign: -1 })), new Date())
+  assert.ok(scored.score < 0, 'hawkish Fed -> bearish EURUSD score')
+  assert.equal(biasState(-2), 'bearish')
+  assert.equal(biasState(2), 'bullish')
+  const flip = detectBiasChange(
+    { score: -0.7, bias: 'bearish' },
+    { score: 3, headlines: [{ title: 'Fed pivots to rate cuts' }] }, 'bearish')
+  assert.equal(flip?.to, 'bullish', 'dovish flow flips bearish day to bullish')
+  assert.equal(detectBiasChange(
+    { score: -0.7, bias: 'bearish' },
+    { score: 0.2, headlines: [] }, 'bearish'), null, 'weak noise ignored')
 
   console.log('cron unit: OK')
 }

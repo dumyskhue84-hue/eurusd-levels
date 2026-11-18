@@ -1,5 +1,5 @@
 import './style.css'
-import type { LevelsFile, BiasFile, BiasEvent, ActualsFile } from './level-types'
+import type { LevelsFile, BiasFile, BiasEvent, ActualsFile, LiveBias } from './level-types'
 import { notifyNewDay } from './notify'
 import {
   PUSH_API, pushSupported, isSubscribed, enablePush, disablePush, syncPushTz,
@@ -70,6 +70,9 @@ function fmtRemaining(ms: number): string {
 const eventById = new Map<string, BiasEvent>()
 let actualsTimer: ReturnType<typeof setInterval> | undefined
 let validTimer: ReturnType<typeof setInterval> | undefined
+let currentBias: BiasFile | null = null
+let currentLive: LiveBias | null = null
+let liveKey = ''
 
 // Live release values from the push worker (TradingView-backed): paints
 // "a 0.3%" into each event row once the news is out.
@@ -105,6 +108,32 @@ function startActualsPolling(date: string): void {
   actualsTimer = setInterval(() => void pollActuals(date), 60_000)
 }
 
+async function loadLiveBias(date: string): Promise<LiveBias | null> {
+  try {
+    const res = await fetch(`${PUSH_API}/api/live-bias/${date}`, { cache: 'no-cache' })
+    if (!res.ok) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+function startLiveBiasPolling(date: string): void {
+  const tick = async () => {
+    const live = await loadLiveBias(date)
+    const key = `${live?.state || ''}|${live?.generated_at || ''}`
+    if (key === liveKey) return
+    liveKey = key
+    currentLive = live
+    if (currentBias) {
+      renderBias(currentBias, currentLive)
+      void pollActuals(date)
+    }
+  }
+  void tick()
+  setInterval(() => void tick(), 60_000)
+}
+
 async function loadBias(): Promise<BiasFile | null> {
   try {
     const res = await fetch('/bias.json', { cache: 'no-cache' })
@@ -116,8 +145,11 @@ async function loadBias(): Promise<BiasFile | null> {
   }
 }
 
-function renderBias(b: BiasFile) {
+function renderBias(b: BiasFile, live: LiveBias | null = null) {
   if (!b.bias) return
+  const liveState = live?.state && live.state !== 'neutral' ? live.state : null
+  const display = liveState || b.bias
+  const overridden = !!liveState && liveState !== b.bias
   const el = document.querySelector('#bias')!
   const win = `${localTime(b.window.start, b.date)}–${localTime(b.window.end, b.date)} ${TZ_LABEL}`
   const target = b.target
@@ -130,8 +162,12 @@ function renderBias(b: BiasFile) {
     return `<span class="win ${w.direction}" title="${esc(t)}">${arrow} ${localTime(w.start, b.date)}–${localTime(w.end, b.date)}</span>`
   }).join('')
   const winHtml = windows ? `<div class="bias-windows">${windows}</div>` : ''
-  const validUntil = b.bias !== 'neutral' ? b.valid_until : null
-  const localUntil = localTime(validUntil, b.date)
+  const validUntil = overridden && live?.until ? live.until
+    : b.bias !== 'neutral' ? b.valid_until : null
+  const utcNow = new Date().toISOString().slice(11, 16)
+  const untilDate = validUntil && validUntil < utcNow
+    ? new Date(Date.now() + 86_400_000).toISOString().slice(0, 10) : b.date
+  const localUntil = localTime(validUntil, untilDate)
   const validHtml = validUntil
     ? `<span class="bias-valid" id="bias-valid" title="Directional window ends ${localUntil} ${TZ_LABEL}">until ${localUntil} ${TZ_LABEL}</span>`
     : ''
@@ -143,6 +179,10 @@ function renderBias(b: BiasFile) {
   const topHead = b.news?.headlines?.[0]
   const newsHtml = topHead
     ? `<div class="bias-news" title="${esc((b.news?.headlines ?? []).map((h) => h.title).join(' | '))}"><span class="tone ${topHead.tone}">${topHead.tone}</span><span class="news-title">${esc(topHead.title)}</span></div>`
+    : ''
+  const liveHead = live?.news?.headlines?.[0]
+  const liveHtml = overridden
+    ? `<div class="bias-live-note" title="Unexpected news changed the daily bias">news flipped ${b.bias} → ${display}: ${esc(liveHead?.title || 'new headline flow')}</div>`
     : ''
   const events = b.events.map((e) => {
     eventById.set(e.id, e)
@@ -171,13 +211,14 @@ function renderBias(b: BiasFile) {
     ? '<div class="bias-note">No High/Medium market-moving news today.</div>'
     : ''
   el.innerHTML = `
-    <article class="card bias ${b.bias}">
+    <article class="card bias ${display}">
       <div class="bias-head">
-        <span class="bias-badge">${ARROW[b.bias] ?? '●'} ${b.bias.toUpperCase()}</span>
-        <span class="bias-head-right">${validHtml}${basisHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
+        <span class="bias-badge">${ARROW[display] ?? '●'} ${display.toUpperCase()}</span>
+        <span class="bias-head-right">${overridden ? '<span class="live-badge">LIVE</span>' : ''}${validHtml}${basisHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
       </div>
-      <div class="bias-win">news window ${win} · calendar ${b.score}${b.news ? ` · headlines ${b.news.score}` : ''}${b.valid_from ? ` · active ${localTime(b.valid_from, b.date)}–${localUntil}` : ''}</div>
+      <div class="bias-win">news window ${win} · calendar ${b.score}${b.news ? ` · headlines ${b.news.score}` : ''}${live ? ` · live ${live.score}` : ''}${b.valid_from && !overridden ? ` · active ${localTime(b.valid_from, b.date)}–${localUntil}` : ''}</div>
       <div class="bias-target">${target}</div>
+      ${liveHtml}
       ${newsHtml}
       ${winHtml}
       <ul class="bias-events">${events}</ul>
@@ -188,7 +229,7 @@ function renderBias(b: BiasFile) {
   if (validTimer) clearInterval(validTimer)
   if (validUntil) {
     const node = el.querySelector<HTMLSpanElement>('#bias-valid')!
-    const expiry = Date.parse(`${b.date}T${validUntil}:00Z`)
+    const expiry = Date.parse(`${untilDate}T${validUntil}:00Z`)
     const tick = () => {
       const remain = expiry - Date.now()
       node.textContent = remain > 0
@@ -204,12 +245,16 @@ function renderBias(b: BiasFile) {
 async function load() {
   // request permission early so Android allows notifications
   if (Notification.permission === 'default') { /* only on user tap */ }
-  const [res, bias] = await Promise.all([
+  const [res, bias, live] = await Promise.all([
     fetch('/levels.json', { cache: 'no-cache' }),
     loadBias(),
+    loadLiveBias(new Date().toISOString().slice(0, 10)),
   ])
   if (!res.ok) throw new Error('levels.json not found')
   const data: LevelsFile = await res.json()
+  currentBias = bias
+  currentLive = live
+  liveKey = `${live?.state || ''}|${live?.generated_at || ''}`
   document.querySelector('#meta')!.textContent =
     `${data.pair} · ${data.date} (UTC) · anchor ${data.anchor_close.toFixed(5)} · ATR ${data.atr_pips.toFixed(1)} pips · zone ±${data.zone_pips} pips · from ${data.generated_from}`
 
@@ -238,16 +283,21 @@ async function load() {
     </article>
   `).join('')
 
-  if (bias) renderBias(bias)
-  if (bias && bias.events.length) startActualsPolling(bias.date)
+  if (bias) renderBias(bias, live)
+  if (bias && bias.events.length) {
+    startActualsPolling(bias.date)
+    startLiveBiasPolling(bias.date)
+  }
 
   // daily notification: new date (new day starts 00:00 UTC)
   const lastDate = localStorage.getItem('levels-date')
   if (lastDate !== data.date) {
     localStorage.setItem('levels-date', data.date)
     if (Notification.permission === 'granted') {
+      const shown = (live?.state && live.state !== 'neutral' ? live.state : bias?.bias) || ''
+      const until = (live?.state && live.state !== 'neutral' && live.until) ? live.until : bias?.valid_until
       const biasLabel = bias
-        ? `${bias.bias}${bias.valid_until ? ` until ${localTime(bias.valid_until, bias.date)} ${TZ_LABEL}` : ''}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
+        ? `${shown}${until ? ` until ${localTime(until, bias.date)} ${TZ_LABEL}` : ''}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
         : undefined
       notifyNewDay(data.date, data.levels.length, biasLabel)
       // also nudge SW in case page is backgrounded

@@ -115,6 +115,16 @@ export interface BiasFile {
   error?: string
 }
 
+export interface LiveBias {
+  date: string
+  state: 'bullish' | 'bearish' | 'neutral'
+  score: number
+  baseline: string
+  news: NewsSentiment | null
+  until: string | null
+  generated_at: string
+}
+
 export interface ActualInfo {
   actual: string | number | null
   dir: number | null

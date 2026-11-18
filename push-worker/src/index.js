@@ -41,6 +41,25 @@ const TITLE_EQ = [
   ['businessinventoriesmom', 'businessinventoriesm/m'],
 ]
 
+// Live headline watch: re-scores central-bank tone during the day and fires
+// when it would flip the daily bias (mirrors scripts/daily_bias.py).
+const NEWS_QUERIES = [
+  ['Fed', 'https://news.google.com/rss/search?q=Federal+Reserve+inflation+rates+when:1d&hl=en-US&gl=US&ceid=US:en', -1],
+  ['ECB', 'https://news.google.com/rss/search?q=ECB+inflation+rates+when:1d&hl=en-US&gl=US&ceid=US:en', 1],
+]
+const HAWKISH = ['rate hike', 'hike', 'hawkish', 'tighten', 'higher rates',
+  'higher for longer', 'aggressive', 'shock', 'hot inflation',
+  'persistent inflation', 'raise rates', 'rate increase', 'basis point',
+  'half-point', 'quarter-point', 'more hikes', 'multiple hikes', 'rate rise']
+const DOVISH = ['rate cut', 'cut rates', 'dovish', 'easing', 'pause hikes',
+  'inflation cools', 'cooling inflation', 'softer inflation', 'lower rates',
+  'rate reduction', 'fewer hikes']
+const NEWS_NEGATORS = ['reject', 'rules out', 'rule out', 'oppose', 'against',
+  'pushback', 'unlikely', 'no rate hike', 'not raise', 'fewer hikes']
+const NEWS_MIXED = ['split', 'divided', 'mixed signals']
+const NEWS_WEIGHTS = [1, 0.7, 0.5, 0.35, 0.25, 0.18]
+const BIAS_FLIP_MIN = 1.2 // ignore weak noise around zero
+
 const TTL_DAY = 172800 // 2d for state keys
 
 // ---------- small utils ----------
@@ -72,6 +91,110 @@ function localizeText(text, date, tz) {
   return text
     .replace(/\b(\d{2}):(\d{2})\b/g, (_, h, m) => localTimeUTC(date, `${h}:${m}`, tz))
     .replace(/\bUTC\b/g, label || '')
+}
+
+// ---------- live headline scoring ----------
+export function headlineTone(text) {
+  const t = String(text || '').toLowerCase()
+  if (NEWS_MIXED.some((k) => t.includes(k))) return null
+  const hawk = HAWKISH.filter((k) => t.includes(k)).length
+  const dove = DOVISH.filter((k) => t.includes(k)).length
+  if (hawk === dove) return null
+  let tone = hawk > dove ? 'hawkish' : 'dovish'
+  if (NEWS_NEGATORS.some((k) => t.includes(k))) tone = tone === 'hawkish' ? 'dovish' : 'hawkish'
+  return tone
+}
+
+function decodeXml(s) {
+  return String(s || '')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+    .replace(/&#0*39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/<[^>]*>/g, '').trim()
+}
+
+export function parseRss(xml) {
+  const out = []
+  for (const block of String(xml || '').match(/<item>[\s\S]*?<\/item>/g) || []) {
+    const title = decodeXml(block.match(/<title>([\s\S]*?)<\/title>/)?.[1])
+    const ts = Date.parse(decodeXml(block.match(/<pubDate>([\s\S]*?)<\/pubDate>/)?.[1]))
+    if (title) out.push({ title, ts })
+  }
+  return out
+}
+
+export function scoreHeadlines(items, now) {
+  const seen = new Set()
+  const scored = []
+  for (const it of items || []) {
+    const clean = it.title.includes(' - ')
+      ? it.title.slice(0, it.title.lastIndexOf(' - ')) : it.title
+    const key = clean.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 60)
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    const tone = headlineTone(clean)
+    if (!tone) continue
+    if (Number.isFinite(it.ts)) {
+      if (it.ts > now.getTime() + 3600000 || now.getTime() - it.ts > 36 * 3600000) continue
+    }
+    scored.push({
+      title: clean.slice(0, 120), tone, sign: it.sign,
+      vote: it.sign * (tone === 'hawkish' ? 1 : -1),
+      time: Number.isFinite(it.ts) ? new Date(it.ts).toISOString().slice(11, 16) : null,
+      ts: Number.isFinite(it.ts) ? it.ts : 0,
+    })
+  }
+  scored.sort((a, b) => b.ts - a.ts)
+  const top = scored.slice(0, NEWS_WEIGHTS.length)
+  const score = top.reduce((sum, h, i) => sum + h.vote * NEWS_WEIGHTS[i], 0)
+  return {
+    score: Math.round(score * 100) / 100,
+    confidence: Math.min(1, Math.abs(score) / 3),
+    headlines: top.map(({ ts, ...h }) => h),
+    last_time: top.find((h) => h.time)?.time || null,
+  }
+}
+
+export function biasState(score) {
+  return score > 0 ? 'bullish' : score < 0 ? 'bearish' : 'neutral'
+}
+
+export function detectBiasChange(bias, news, baseline) {
+  const cal = Number(bias?.score) || 0
+  const live = cal + (Number(news?.score) || 0)
+  const from = baseline || bias?.bias
+  const to = biasState(live)
+  if (!from || !to || from === to || Math.abs(live) < BIAS_FLIP_MIN) return null
+  return {
+    from, to, score: Math.round(live * 100) / 100,
+    headline: news?.headlines?.[0]?.title || 'new headline flow',
+    until: new Date(Date.now() + 4 * 3600000).toISOString().slice(11, 16),
+  }
+}
+
+async function fetchLiveNews(env, now) {
+  const key = 'news:live'
+  try {
+    const cached = await env.SUBS.get(key, 'json')
+    if (cached && now.getTime() - cached.t < 300000) return cached
+  } catch { /* refetch */ }
+  const items = []
+  for (const [, url, sign] of NEWS_QUERIES) {
+    try {
+      const res = await fetch(`${url}&cb=${now.getTime()}`, {
+        headers: { 'User-Agent': UA },
+      })
+      if (!res.ok) continue
+      for (const it of parseRss(await res.text())) items.push({ ...it, sign })
+    } catch { /* skip this feed */ }
+  }
+  if (!items.length) return null
+  const result = { t: now.getTime(), ...scoreHeadlines(items, now) }
+  try {
+    await env.SUBS.put(key, JSON.stringify(result), { expirationTtl: 600 })
+  } catch { /* cache optional */ }
+  return result
 }
 
 function parseNum(s) {
@@ -386,6 +509,45 @@ export async function run(env, opts = {}) {
 
   // 2) release outcomes (+ actuals for the app card)
   await processOutcomes(env, bias, today, now, subs)
+
+  // 3) intraday headline watch -> live bias + change notifications
+  await watchNewsBias(env, bias, today, now, subs)
+}
+
+async function watchNewsBias(env, bias, today, now, subs) {
+  const news = await fetchLiveNews(env, now)
+  if (!news) return
+  const live = Math.round(((Number(bias.score) || 0) + news.score) * 100) / 100
+  await env.SUBS.put(`livebias:${today}`, JSON.stringify({
+    date: today, state: biasState(live), score: live, baseline: bias.bias,
+    news, until: new Date(now.getTime() + 4 * 3600000).toISOString().slice(11, 16),
+    generated_at: now.toISOString(),
+  }), { expirationTtl: TTL_DAY })
+
+  const last = await env.SUBS.get(`biaschange:last:${today}`, 'json')
+  const change = detectBiasChange(bias, news, last?.state || bias.bias)
+  if (!change || !subs.length) return
+  const count = Number((await env.SUBS.get(`biaschange:count:${today}`, 'json'))?.n || 0)
+  if (count >= 3) return
+  const cool = await env.SUBS.get(`biaschange:cooldown:${today}`, 'json')
+  if (cool && now.getTime() - Number(cool.t || 0) < 30 * 60000) return
+
+  const short = change.headline.length > 90
+    ? change.headline.slice(0, 89) + '…' : change.headline
+  const n = await broadcastLocalized(env, subs, {
+    title: `EURUSD bias change: ${change.to.toUpperCase()} (was ${change.from})`,
+    body: `${short} · score ${change.score} · until ${change.until} UTC`,
+    tag: `biaschange-${today}-${change.to}`,
+    url: '/',
+  }, today)
+  if (n > 0) {
+    await env.SUBS.put(`biaschange:last:${today}`,
+      JSON.stringify({ state: change.to }), { expirationTtl: TTL_DAY })
+    await env.SUBS.put(`biaschange:count:${today}`,
+      JSON.stringify({ n: count + 1 }), { expirationTtl: TTL_DAY })
+    await env.SUBS.put(`biaschange:cooldown:${today}`,
+      JSON.stringify({ t: now.getTime() }), { expirationTtl: TTL_DAY })
+  }
 }
 
 // ---------- HTTP ----------
@@ -417,6 +579,13 @@ async function handleFetch(request, env) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: 'bad date' }, 400, cors)
     const map = (await env.SUBS.get(`actuals:${date}`, 'json')) || {}
     return json(map, 200, cors)
+  }
+
+  if (path.startsWith('/api/live-bias/') && request.method === 'GET') {
+    const date = path.slice('/api/live-bias/'.length)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: 'bad date' }, 400, cors)
+    const live = (await env.SUBS.get(`livebias:${date}`, 'json')) || null
+    return json(live, 200, cors)
   }
 
   if (path === '/api/subscribe' && request.method === 'POST') {
