@@ -26,7 +26,15 @@ footer { margin-top: 24px; opacity:.6; }
 .card.bias.bearish .bias-badge { color:#f85149; }
 .card.bias.neutral .bias-badge { color:#9aa4b2; }
 .bias-conf { font-size:13px; opacity:.85; }
-.bias-head-right { display:flex; align-items:center; gap:8px; }
+.bias-head-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+.bias-basis { font-size:11px; font-weight:700; padding:3px 7px; border-radius:999px;
+              border:1px solid #2f3336; color:#9aa4b2; white-space:nowrap; }
+.bias-news { display:flex; gap:8px; align-items:baseline; margin-top:8px; padding:7px 9px;
+             background:#10161d; border:1px solid #2f3336; border-radius:8px; font-size:12px; }
+.bias-news .tone { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; }
+.bias-news .tone.hawkish { color:#f85149; }
+.bias-news .tone.dovish { color:#3fb950; }
+.bias-news .news-title { opacity:.85; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .bias-valid { font-size:12px; font-weight:700; padding:3px 8px; border-radius:999px;
               border:1px solid #2ea04355; background:#0d2818; color:#3fb950;
               font-variant-numeric:tabular-nums; }

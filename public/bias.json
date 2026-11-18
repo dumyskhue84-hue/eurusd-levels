@@ -6,10 +6,89 @@
     "end": "24:00",
     "tz": "UTC"
   },
-  "bias": "neutral",
-  "confidence": 0.0,
-  "score": 0,
+  "bias": "bearish",
+  "basis": "calendar+news",
+  "confidence": 0.35,
+  "score": -0.7,
+  "news": {
+    "score": -2.28,
+    "confidence": 0.76,
+    "basis": "headlines (Google News RSS, <=36h)",
+    "headlines": [
+      {
+        "title": "Fed governor favors half-point rate hike in December unless Fed signals January increase",
+        "source": "Anadolu Ajans\u0131",
+        "vote": -1,
+        "time": "13:24",
+        "tone": "hawkish"
+      },
+      {
+        "title": "Global FX Market Summary - Hawkish Fed, Strong Dollar, and Nvidia Earnings Drive Markets - 18 November 2026",
+        "source": "FinanceFeeds",
+        "vote": -1,
+        "time": "13:17",
+        "tone": "hawkish"
+      },
+      {
+        "title": "Fed's Christopher Waller Urges Aggressive Rate Hike As Inflation Persists",
+        "source": "tippinsights",
+        "vote": -1,
+        "time": "13:12",
+        "tone": "hawkish"
+      },
+      {
+        "title": "New York Fed President Rejects December Big Rate Hike",
+        "source": "\uc870\uc120\uc77c\ubcf4",
+        "vote": 1,
+        "time": "13:07",
+        "tone": "dovish"
+      },
+      {
+        "title": "Fed Governor Waller Says Broad-Based Inflation Calls for December 50-Basis-Point Hike",
+        "source": "bloomingbit",
+        "vote": -1,
+        "time": "13:02",
+        "tone": "hawkish"
+      },
+      {
+        "title": "Fed's Waller: Fed should hike 50 bps now or signal faster rate increases",
+        "source": "FXStreet",
+        "vote": -1,
+        "time": "13:01",
+        "tone": "hawkish"
+      }
+    ],
+    "last_time": "13:24",
+    "error": null
+  },
   "events": [
+    {
+      "title": "CPI y/y",
+      "country": "GBP",
+      "time": "07:00",
+      "impact": "High",
+      "forecast": "3.6%",
+      "previous": "3.5%",
+      "actual": "",
+      "proxy": true,
+      "signal": "usd_strong",
+      "vote": -1,
+      "watch": false,
+      "id": "2026-11-18T07:00-GBP-cpi-y-y",
+      "expected_pips": 34.9,
+      "targets": {
+        "up": {
+          "price": 1.1025,
+          "pips": 26.0,
+          "label": "ROUND"
+        },
+        "down": {
+          "price": 1.0975,
+          "pips": 24.0,
+          "label": "ROUND"
+        }
+      }
+    },
     {
       "title": "ECB Financial Stability Review",
       "country": "EUR",
@@ -17,6 +96,8 @@
       "impact": "Medium",
       "forecast": "",
       "previous": "",
+      "actual": "",
+      "proxy": false,
       "signal": null,
       "vote": 0,
       "watch": true,
@@ -42,6 +123,8 @@
       "impact": "Medium",
       "forecast": "",
       "previous": "",
+      "actual": "",
+      "proxy": false,
       "signal": null,
       "vote": 0,
       "watch": true,
@@ -61,12 +144,41 @@
       }
     },
     {
+      "title": "BOE Gov Bailey Speaks",
+      "country": "GBP",
+      "time": "15:00",
+      "impact": "High",
+      "forecast": "",
+      "previous": "",
+      "actual": "",
+      "proxy": true,
+      "signal": null,
+      "vote": 0,
+      "watch": true,
+      "id": "2026-11-18T15:00-GBP-boe-gov-bailey-speaks",
+      "expected_pips": 20.6,
+      "targets": {
+        "up": {
+          "price": 1.1025,
+          "pips": 26.0,
+          "label": "ROUND"
+        },
+        "down": {
+          "price": 1.0975,
+          "pips": 24.0,
+          "label": "ROUND"
+        }
+      }
+    },
+    {
       "title": "FOMC Meeting Minutes",
       "country": "USD",
       "time": "19:00",
       "impact": "High",
       "forecast": "",
       "previous": "",
+      "actual": "",
+      "proxy": false,
       "signal": null,
       "vote": 0,
       "watch": true,
@@ -86,14 +198,34 @@
       }
     }
   ],
-  "windows": [],
-  "valid_from": null,
-  "valid_until": null,
-  "target": null,
-  "briefing": {
-    "title": "EURUSD neutral: 3 events, first 09:00 UTC",
-    "body": "09:00 ECB Financial Stability\u2026 \u00b122.4p \u00b7 14:25 ECB President Lagarde S\u2026 \u00b112.7p \u00b7 19:00 FOMC Meeting Minutes \u00b119.2p"
+  "windows": [
+    {
+      "direction": "bearish",
+      "start": "07:00",
+      "end": "11:00",
+      "event_ids": [
+        "2026-11-18T07:00-GBP-cpi-y-y"
+      ],
+      "cause": "CPI y/y",
+      "target_price": 1.0975,
+      "target_pips": 24.0
+    }
+  ],
+  "valid_from": "13:27",
+  "valid_until": "17:27",
+  "target": {
+    "price": 1.0975,
+    "type": "ROUND",
+    "note": "25-pip",
+    "zone_low": 1.09573,
+    "zone_high": 1.09927,
+    "distance_pips": 24.0,
+    "approach_side": "from_above"
   },
-  "generated_at": "2026-11-18T13:07:59+00:00",
-  "disclaimer": "Calendar-based expectation, not a trading signal."
+  "briefing": {
+    "title": "EURUSD bearish until 17:27: 5 events, first 07:00 UTC",
+    "body": "07:00 CPI y/y \u25bc1.0975 (24.0p) \u00b7 09:00 ECB Financial Stability\u2026 \u00b122.4p \u00b7 14:25 ECB President Lagarde S\u2026 \u00b112.7p \u00b7 +2 more \u00b7 \u25bc07:00-11:00 \u00b7 hawkish news: Fed governor favors half-point rate hike in Dec\u2026 \u00b7 until 17:27 UTC \u00b7 aim 1.0975"
+  },
+  "generated_at": "2026-11-18T13:27:02+00:00",
+  "disclaimer": "Calendar + headline-sentiment expectation, not a trading signal."
 }

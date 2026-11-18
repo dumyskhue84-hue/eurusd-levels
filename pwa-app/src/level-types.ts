@@ -43,6 +43,8 @@ export interface BiasEvent {
   impact: 'High' | 'Medium'
   forecast: string
   previous: string
+  actual?: string
+  proxy?: boolean
   signal: string | null
   vote: number
   watch: boolean
@@ -59,6 +61,23 @@ export interface BiasWindow {
   cause: string
   target_price: number | null
   target_pips: number | null
+}
+
+export interface NewsHeadline {
+  title: string
+  source: string
+  vote: number
+  time: string | null
+  tone: 'hawkish' | 'dovish'
+}
+
+export interface NewsSentiment {
+  score: number
+  confidence: number
+  basis: string
+  headlines: NewsHeadline[]
+  last_time: string | null
+  error?: string | null
 }
 
 export interface Briefing {
@@ -81,8 +100,10 @@ export interface BiasFile {
   date: string
   window: { start: string; end: string; tz: string }
   bias: 'bullish' | 'bearish' | 'neutral' | null
+  basis: 'calendar' | 'news' | 'calendar+news' | 'none'
   confidence: number | null
   score: number | null
+  news: NewsSentiment | null
   events: BiasEvent[]
   windows: BiasWindow[]
   valid_from: string | null

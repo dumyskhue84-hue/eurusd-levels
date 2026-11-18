@@ -115,6 +115,15 @@ function renderBias(b: BiasFile) {
   const validHtml = validUntil
     ? `<span class="bias-valid" id="bias-valid" title="Directional window ends ${validUntil} UTC">until ${validUntil} UTC</span>`
     : ''
+  const basisLabel = b.basis === 'calendar+news' ? 'calendar + news'
+    : b.basis === 'news' ? 'headlines'
+    : b.basis === 'calendar' ? 'calendar' : ''
+  const basisHtml = basisLabel
+    ? `<span class="bias-basis" title="What drove this bias">${basisLabel}</span>` : ''
+  const topHead = b.news?.headlines?.[0]
+  const newsHtml = topHead
+    ? `<div class="bias-news" title="${esc((b.news?.headlines ?? []).map((h) => h.title).join(' | '))}"><span class="tone ${topHead.tone}">${topHead.tone}</span><span class="news-title">${esc(topHead.title)}</span></div>`
+    : ''
   const events = b.events.map((e) => {
     eventById.set(e.id, e)
     const dir = e.watch ? '○' : e.vote > 0 ? '↑' : '↓'
@@ -126,8 +135,8 @@ function renderBias(b: BiasFile) {
     const tgtTitle = tgt
       ? `${tgt.label} · ${tgt.pips} pips from anchor`
       : `expected ±${e.expected_pips} pips`
-    const nums = (e.forecast || e.previous)
-      ? `<span class="nums">f ${esc(e.forecast) || '—'} · p ${esc(e.previous) || '—'}</span>`
+    const nums = (e.forecast || e.previous || e.actual)
+      ? `<span class="nums">${e.actual ? `a ${esc(e.actual)} · ` : ''}f ${esc(e.forecast) || '—'} · p ${esc(e.previous) || '—'}${e.proxy ? ' · proxy' : ''}</span>`
       : ''
     return `<li class="ev${e.watch ? ' is-watch' : ''}" data-eid="${esc(e.id)}">
       <span class="ev-time">${e.time}</span>
@@ -139,16 +148,17 @@ function renderBias(b: BiasFile) {
     </li>`
   }).join('')
   const quiet = b.events.length === 0
-    ? '<div class="bias-note">No High/Medium USD/EUR news today (UTC).</div>'
+    ? '<div class="bias-note">No High/Medium market-moving news today (UTC).</div>'
     : ''
   el.innerHTML = `
     <article class="card bias ${b.bias}">
       <div class="bias-head">
         <span class="bias-badge">${ARROW[b.bias] ?? '●'} ${b.bias.toUpperCase()}</span>
-        <span class="bias-head-right">${validHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
+        <span class="bias-head-right">${validHtml}${basisHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
       </div>
-      <div class="bias-win">news window ${win} · score ${b.score}${b.valid_from ? ` · active ${b.valid_from}–${validUntil}` : ''}</div>
+      <div class="bias-win">news window ${win} · calendar ${b.score}${b.news ? ` · headlines ${b.news.score}` : ''}${b.valid_from ? ` · active ${b.valid_from}–${validUntil}` : ''}</div>
       <div class="bias-target">${target}</div>
+      ${newsHtml}
       ${winHtml}
       <ul class="bias-events">${events}</ul>
       ${quiet}
