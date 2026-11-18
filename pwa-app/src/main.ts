@@ -1,6 +1,9 @@
 import './style.css'
-import type { LevelsFile, BiasFile } from './level-types'
-import { requestPermission, notifyNewDay } from './notify'
+import type { LevelsFile, BiasFile, BiasEvent, ActualsFile } from './level-types'
+import { notifyNewDay } from './notify'
+import {
+  PUSH_API, pushSupported, isSubscribed, enablePush, disablePush,
+} from './push'
 import { initInstallButton } from './install'
 import { initPWA } from './pwa'
 
@@ -11,7 +14,7 @@ app.innerHTML = `
       <h1>EURUSD Daily Levels</h1>
       <p id="meta">Loading…</p>
       <div class="actions">
-        <button id="notify">Enable daily notifications</button>
+        <button id="notify">Enable news alerts</button>
         <button id="install">Install app</button>
       </div>
       <div id="install-steps" style="margin-top:10px">
@@ -37,6 +40,43 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) =>
 
 const ARROW: Record<string, string> = { bullish: '▲', bearish: '▼', neutral: '●' }
 
+const eventById = new Map<string, BiasEvent>()
+let actualsTimer: ReturnType<typeof setInterval> | undefined
+
+// Live release values from the push worker (TradingView-backed): paints
+// "a 0.3%" into each event row once the news is out.
+async function pollActuals(date: string): Promise<void> {
+  try {
+    const res = await fetch(`${PUSH_API}/api/actuals/${date}`, { cache: 'no-cache' })
+    if (!res.ok) return
+    const data: ActualsFile = await res.json()
+    for (const [id, a] of Object.entries(data)) {
+      const e = eventById.get(id)
+      const nums = document.querySelector(`.ev[data-eid="${CSS.escape(id)}"] .nums`)
+      if (!e || !nums) continue
+      let act = nums.querySelector('.act') as HTMLSpanElement | null
+      if (!act) {
+        act = document.createElement('span')
+        act.className = 'act'
+        nums.append(document.createTextNode(' · '), act)
+      }
+      const val = a.actual == null || a.actual === '' ? '—' : String(a.actual)
+      const d = a.dir ?? 0
+      act.textContent = `a ${val}`
+      act.className = `act ${d > 0 ? 'ok' : d < 0 ? 'bad' : 'flat'}`
+      act.title = `released ${a.time} UTC`
+    }
+  } catch {
+    // offline or worker unreachable — retry on next tick
+  }
+}
+
+function startActualsPolling(date: string): void {
+  void pollActuals(date)
+  if (actualsTimer) clearInterval(actualsTimer)
+  actualsTimer = setInterval(() => void pollActuals(date), 60_000)
+}
+
 async function loadBias(): Promise<BiasFile | null> {
   try {
     const res = await fetch('/bias.json', { cache: 'no-cache' })
@@ -56,20 +96,38 @@ function renderBias(b: BiasFile) {
     ? `expect move toward <strong>${b.target.price.toFixed(5)}</strong> ${esc(b.target.type)}` +
       ` · ${b.target.distance_pips} pips · approach ${b.target.approach_side.replace('_', ' ')}`
     : 'no target level in bias direction'
+  const windows = (b.windows ?? []).map((w) => {
+    const arrow = w.direction === 'bearish' ? '▼' : '▲'
+    const t = `${w.cause}${w.target_price != null ? ` → ${w.target_price.toFixed(5)} (${w.target_pips}p)` : ''}`
+    return `<span class="win ${w.direction}" title="${esc(t)}">${arrow} ${w.start}–${w.end}</span>`
+  }).join('')
+  const winHtml = windows ? `<div class="bias-windows">${windows}</div>` : ''
   const events = b.events.map((e) => {
+    eventById.set(e.id, e)
     const dir = e.watch ? '○' : e.vote > 0 ? '↑' : '↓'
     const dirCls = e.watch ? 'watch' : e.vote > 0 ? 'up' : 'down'
+    const tgt = e.vote > 0 ? e.targets?.up : e.vote < 0 ? e.targets?.down : null
+    const arrow = e.vote > 0 ? '▲' : e.vote < 0 ? '▼' : '±'
+    const tgtTxt = tgt ? `${arrow}${tgt.price.toFixed(5)}` : `±${e.expected_pips}p`
+    const tgtCls = e.vote > 0 ? 'up' : e.vote < 0 ? 'down' : 'range'
+    const tgtTitle = tgt
+      ? `${tgt.label} · ${tgt.pips} pips from anchor`
+      : `expected ±${e.expected_pips} pips`
     const nums = (e.forecast || e.previous)
       ? `<span class="nums">f ${esc(e.forecast) || '—'} · p ${esc(e.previous) || '—'}</span>`
       : ''
-    return `<li class="ev${e.watch ? ' is-watch' : ''}">
+    return `<li class="ev${e.watch ? ' is-watch' : ''}" data-eid="${esc(e.id)}">
       <span class="ev-time">${e.time}</span>
       <span class="imp ${e.impact.toLowerCase()}">${e.impact[0]}</span>
       <span class="ev-title">${e.country} · ${esc(e.title)}</span>
+      <span class="ev-tgt ${tgtCls}" title="${esc(tgtTitle)}">${tgtTxt}</span>
       <span class="ev-dir ${dirCls}">${dir}</span>
       ${nums}
     </li>`
   }).join('')
+  const quiet = b.events.length === 0
+    ? '<div class="bias-note">No High/Medium USD/EUR news today (UTC).</div>'
+    : ''
   el.innerHTML = `
     <article class="card bias ${b.bias}">
       <div class="bias-head">
@@ -78,7 +136,9 @@ function renderBias(b: BiasFile) {
       </div>
       <div class="bias-win">news window ${win} · score ${b.score}</div>
       <div class="bias-target">${target}</div>
+      ${winHtml}
       <ul class="bias-events">${events}</ul>
+      ${quiet}
       <div class="bias-note">${esc(b.disclaimer)}</div>
     </article>`
 }
@@ -121,6 +181,7 @@ async function load() {
   `).join('')
 
   if (bias) renderBias(bias)
+  if (bias && bias.events.length) startActualsPolling(bias.date)
 
   // daily notification: new date (new day starts 00:00 UTC)
   const lastDate = localStorage.getItem('levels-date')
@@ -140,11 +201,41 @@ async function load() {
   }
 }
 
-document.querySelector('#notify')!.addEventListener('click', async () => {
-  const p = await requestPermission()
-  const btn = document.querySelector('#notify') as HTMLButtonElement
-  btn.textContent = p === 'granted' ? 'Notifications enabled' : 'Notifications blocked'
-  btn.disabled = true
+const notifyBtn = document.querySelector('#notify') as HTMLButtonElement
+
+async function refreshNotifyBtn(): Promise<void> {
+  if (!pushSupported()) {
+    notifyBtn.textContent = 'Push not supported on this browser'
+    notifyBtn.disabled = true
+    return
+  }
+  notifyBtn.textContent = (await isSubscribed())
+    ? 'News alerts ON · tap to turn off'
+    : 'Enable news alerts'
+  notifyBtn.disabled = false
+}
+
+notifyBtn.addEventListener('click', async () => {
+  notifyBtn.disabled = true
+  try {
+    if (await isSubscribed()) {
+      await disablePush()
+      notifyBtn.textContent = 'News alerts off'
+    } else {
+      const r = await enablePush()
+      notifyBtn.textContent = r === 'ok'
+        ? 'News alerts ON'
+        : r === 'denied'
+          ? 'Notifications blocked — allow them in browser settings'
+          : r === 'unsupported'
+            ? 'Push not supported on this browser'
+            : 'Could not reach push service — tap to retry'
+    }
+  } finally {
+    notifyBtn.disabled = false
+    if (await isSubscribed()) notifyBtn.textContent = 'News alerts ON · tap to turn off'
+  }
 })
 
 load().catch((e) => { document.querySelector('#meta')!.textContent = 'Could not load levels: ' + e.message })
+void refreshNotifyBtn()

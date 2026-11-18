@@ -29,17 +29,32 @@ footer { margin-top: 24px; opacity:.6; }
 .bias-win { font-size:12px; opacity:.7; margin-top:4px; }
 .bias-target { font-size:14px; margin-top:8px; }
 .bias-events { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px; }
-.ev { display:grid; grid-template-columns:auto auto 1fr auto; gap:8px; align-items:center;
+.ev { display:grid; grid-template-columns:auto auto 1fr auto auto; gap:8px; align-items:center;
       font-size:13px; background:#10161d; border:1px solid #2f3336; border-radius:8px; padding:6px 8px; }
 .ev.is-watch { opacity:.55; }
 .ev-time { font-variant-numeric:tabular-nums; opacity:.85; }
 .ev-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ev-tgt { font-weight:700; font-size:12px; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.ev-tgt.up { color:#3fb950; }
+.ev-tgt.down { color:#f85149; }
+.ev-tgt.range { color:#9aa4b2; }
 .ev-dir { font-weight:700; }
 .ev-dir.up { color:#3fb950; }
 .ev-dir.down { color:#f85149; }
 .ev-dir.watch { color:#9aa4b2; }
 .ev .nums { grid-column:2 / -1; font-size:11px; opacity:.6; font-variant-numeric:tabular-nums; }
+.act { font-weight:700; opacity:1; }
+.act.ok { color:#3fb950; }
+.act.bad { color:#f85149; }
+.act.flat { color:#e3b341; }
 .imp { font-size:11px; font-weight:700; border-radius:4px; padding:1px 5px; text-align:center; }
 .imp.high { background:#5c1d24; color:#ff7b8a; }
 .imp.medium { background:#544400; color:#e3b341; }
+
+/* bullish / bearish time windows */
+.bias-windows { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.win { font-size:12px; font-weight:700; padding:3px 8px; border-radius:999px;
+       border:1px solid #2f3336; font-variant-numeric:tabular-nums; }
+.win.bullish { color:#3fb950; background:#0d2818; border-color:#2ea04355; }
+.win.bearish { color:#f85149; background:#2d1216; border-color:#f8514955; }
 .bias-note { font-size:11px; opacity:.55; margin-top:8px; }

@@ -30,6 +30,12 @@ export interface LevelsFile {
   levels: Level[]
 }
 
+export interface EventTarget {
+  price: number
+  pips: number
+  label: string
+}
+
 export interface BiasEvent {
   title: string
   country: string
@@ -40,6 +46,24 @@ export interface BiasEvent {
   signal: string | null
   vote: number
   watch: boolean
+  id: string
+  expected_pips: number
+  targets: { up: EventTarget | null; down: EventTarget | null }
+}
+
+export interface BiasWindow {
+  direction: 'bullish' | 'bearish'
+  start: string
+  end: string
+  event_ids: string[]
+  cause: string
+  target_price: number | null
+  target_pips: number | null
+}
+
+export interface Briefing {
+  title: string
+  body: string
 }
 
 export interface BiasTarget {
@@ -60,8 +84,18 @@ export interface BiasFile {
   confidence: number | null
   score: number | null
   events: BiasEvent[]
+  windows: BiasWindow[]
   target: BiasTarget | null
+  briefing: Briefing | null
   generated_at: string
   disclaimer: string
   error?: string
 }
+
+export interface ActualInfo {
+  actual: string | number | null
+  dir: number | null
+  time: string
+}
+
+export type ActualsFile = Record<string, ActualInfo>

@@ -1,0 +1,16 @@
+name = "eurusd-push"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# KV store: push subscriptions, actuals cache, cron dedupe keys
+[[kv_namespaces]]
+binding = "SUBS"
+id = "dbd6a3d01c114e14a7c640b973f500bb"
+
+# Briefing + release-outcome cron (precision: +/-5 min)
+[triggers]
+crons = ["*/5 * * * *"]
+
+# VAPID subject (RFC 8292 "sub" claim); private key is a Wrangler secret.
+[vars]
+VAPID_SUBJECT = "mailto:dumyskhue84@gmail.com"

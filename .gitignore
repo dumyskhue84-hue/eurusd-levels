@@ -12,3 +12,5 @@ levels/*.parquet
 levels/*.csv
 explore_levels.py
 AppData/
+
+push-worker/vapid_private.b64

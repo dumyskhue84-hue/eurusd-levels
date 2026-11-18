@@ -1,47 +1,97 @@
 {
   "pair": "EURUSD",
-  "date": "2026-11-13",
+  "date": "2026-11-18",
   "window": {
     "start": "00:00",
     "end": "24:00",
     "tz": "UTC"
   },
-  "bias": "bullish",
-  "confidence": 1.0,
-  "score": 4,
+  "bias": "neutral",
+  "confidence": 0.0,
+  "score": 0,
   "events": [
     {
-      "title": "Core PPI m/m",
-      "country": "USD",
-      "time": "13:30",
-      "impact": "High",
-      "forecast": "0.3%",
-      "previous": "0.7%",
-      "signal": "usd_weak",
-      "vote": 1,
-      "watch": false
+      "title": "ECB Financial Stability Review",
+      "country": "EUR",
+      "time": "09:00",
+      "impact": "Medium",
+      "forecast": "",
+      "previous": "",
+      "signal": null,
+      "vote": 0,
+      "watch": true,
+      "id": "2026-11-18T09:00-EUR-ecb-financial-stability-review",
+      "expected_pips": 22.4,
+      "targets": {
+        "up": {
+          "price": 1.1025,
+          "pips": 26.0,
+          "label": "ROUND"
+        },
+        "down": {
+          "price": 1.0975,
+          "pips": 24.0,
+          "label": "ROUND"
+        }
+      }
     },
     {
-      "title": "PPI m/m",
+      "title": "ECB President Lagarde Speaks",
+      "country": "EUR",
+      "time": "14:25",
+      "impact": "Medium",
+      "forecast": "",
+      "previous": "",
+      "signal": null,
+      "vote": 0,
+      "watch": true,
+      "id": "2026-11-18T14:25-EUR-ecb-president-lagarde-speaks",
+      "expected_pips": 12.7,
+      "targets": {
+        "up": {
+          "price": 1.10117,
+          "pips": 12.7,
+          "label": "EST"
+        },
+        "down": {
+          "price": 1.09863,
+          "pips": 12.7,
+          "label": "EST"
+        }
+      }
+    },
+    {
+      "title": "FOMC Meeting Minutes",
       "country": "USD",
-      "time": "13:30",
+      "time": "19:00",
       "impact": "High",
-      "forecast": "0.4%",
-      "previous": "1.3%",
-      "signal": "usd_weak",
-      "vote": 1,
-      "watch": false
+      "forecast": "",
+      "previous": "",
+      "signal": null,
+      "vote": 0,
+      "watch": true,
+      "id": "2026-11-18T19:00-USD-fomc-meeting-minutes",
+      "expected_pips": 19.2,
+      "targets": {
+        "up": {
+          "price": 1.1025,
+          "pips": 26.0,
+          "label": "ROUND"
+        },
+        "down": {
+          "price": 1.0975,
+          "pips": 24.0,
+          "label": "ROUND"
+        }
+      }
     }
   ],
-  "target": {
-    "price": 1.12469,
-    "type": "RUNG_UP",
-    "note": "PC+0.4A",
-    "zone_low": 1.12313,
-    "zone_high": 1.12625,
-    "distance_pips": 24.9,
-    "approach_side": "from_below"
+  "windows": [],
+  "target": null,
+  "briefing": {
+    "title": "EURUSD neutral: 3 events, first 09:00 UTC",
+    "body": "09:00 ECB Financial Stability\u2026 \u00b122.4p \u00b7 14:25 ECB President Lagarde S\u2026 \u00b112.7p \u00b7 19:00 FOMC Meeting Minutes \u00b119.2p"
   },
-  "generated_at": "2026-11-13T06:41:38+00:00",
+  "generated_at": "2026-11-18T06:30:50+00:00",
   "disclaimer": "Calendar-based expectation, not a trading signal."
 }

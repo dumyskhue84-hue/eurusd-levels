@@ -44,12 +44,31 @@ self.addEventListener('fetch', (event: FetchEvent) => {
 })
 
 self.addEventListener('notificationclick', (event: ExtendableEvent) => {
-  const ne = event as unknown as { notification: Notification }
+  const ne = event as unknown as { notification: Notification & { data?: { url?: string } } }
   ne.notification.close()
+  const target = ne.notification.data?.url || '/'
   event.waitUntil(
     self.clients.matchAll({ type: 'window' }).then((cs: readonly unknown[]) => {
       const c = cs[0] as WindowClient | undefined
-      return c ? c.focus() : self.clients.openWindow('/')
+      return c ? c.focus() : self.clients.openWindow(target)
+    })
+  )
+})
+
+// Web Push from eurusd-push worker: { title, body, tag, url }
+self.addEventListener('push', (event: PushEvent) => {
+  let data: { title?: string; body?: string; tag?: string; url?: string } = {}
+  try {
+    data = (event.data?.json() as typeof data) || {}
+  } catch {
+    data = { body: event.data?.text() || '' }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'EURUSD news', {
+      body: data.body || '',
+      icon: '/icon-192.png',
+      tag: data.tag || 'news',
+      data: { url: data.url || '/' },
     })
   )
 })

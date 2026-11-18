@@ -50,6 +50,9 @@ jobs:
         run: python scripts/daily_adaptive.py
       - name: Generate levels.json (staleness warning if >1d)
         run: python scripts/generate_levels_json.py
+      - name: News hour volatility study (expected_pips multipliers)
+        run: python scripts/news_study.py
+        env: { PYTHONIOENCODING: 'utf-8' }
       - name: Generate bias.json (economic calendar)
         run: python scripts/daily_bias.py
         env: { PYTHONIOENCODING: 'utf-8' }
@@ -61,12 +64,27 @@ jobs:
             pwa-app/public/levels.json
             pwa-app/public/bias.json
       - run: npm ci --prefix pwa-app && npm run build --prefix pwa-app
-        env: { CI: 'true' }
+        env:
+          CI: 'true'
+          VITE_PUSH_API: 'https://eurusd-push.dumyskhue84.workers.dev'
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy pwa-app/dist --project-name=eurusd-levels
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Needs Workers Scripts:Edit (+ KV Storage:Edit) on CLOUDFLARE_API_TOKEN.
+      # Soft-fails so the daily levels/Pages deploy is never blocked by scopes.
+      - name: Deploy push worker (briefing/outcome cron)
+        id: push-worker
+        continue-on-error: true
+        run: npx wrangler deploy --config push-worker/wrangler.toml
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Warn if push worker deploy failed
+        if: steps.push-worker.outcome == 'failure'
+        run: |
+          echo "::warning::eurusd-push deploy failed - CLOUDFLARE_API_TOKEN needs Workers Scripts:Edit and KV Storage:Edit scopes"
       - name: Verify live endpoints
         run: |
           echo "--- manifest ---"
@@ -77,4 +95,7 @@ jobs:
           echo
           echo "--- bias.json ---"
           curl -s https://eurusd-levels.pages.dev/bias.json | head -c 400
+          echo
+          echo "--- push worker health ---"
+          curl -s https://eurusd-push.dumyskhue84.workers.dev/api/health
           echo
