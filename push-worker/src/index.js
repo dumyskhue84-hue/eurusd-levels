@@ -181,13 +181,17 @@ async function fetchLiveNews(env, now) {
   } catch { /* refetch */ }
   const items = []
   for (const [, url, sign] of NEWS_QUERIES) {
+    let res = null
+    for (const init of [{ headers: { 'User-Agent': UA } }, {}]) {
+      try {
+        res = await fetch(`${url}&cb=${now.getTime()}`, init)
+        if (res.ok) break
+      } catch { /* try next */ }
+    }
+    if (!res?.ok) continue
     try {
-      const res = await fetch(`${url}&cb=${now.getTime()}`, {
-        headers: { 'User-Agent': UA },
-      })
-      if (!res.ok) continue
       for (const it of parseRss(await res.text())) items.push({ ...it, sign })
-    } catch { /* skip this feed */ }
+    } catch { /* skip malformed feed */ }
   }
   if (!items.length) return null
   const result = { t: now.getTime(), ...scoreHeadlines(items, now) }
@@ -619,6 +623,26 @@ async function handleFetch(request, env) {
       await env.SUBS.delete(`sub:${body.endpoint}`)
     }
     return json({ ok: true }, 200, cors)
+  }
+
+  if (path === '/api/debug/news') {
+    const now = new Date()
+    const debug = []
+    for (const [bank, url, sign] of NEWS_QUERIES) {
+      for (const init of [{ headers: { 'User-Agent': UA } }, {}]) {
+        try {
+          const res = await fetch(`${url}&cb=${now.getTime()}`, init)
+          const xml = res.ok ? await res.text() : ''
+          debug.push({ bank, status: res.status, bytes: xml.length,
+            items: parseRss(xml).length, ua: !!init.headers })
+          if (res.ok) break
+        } catch (e) {
+          debug.push({ bank, error: String(e?.message || e), ua: !!init.headers })
+        }
+      }
+    }
+    const live = await env.SUBS.get(`livebias:${now.toISOString().slice(0, 10)}`, 'json')
+    return json({ debug, live: live ? { state: live.state, score: live.score } : null }, 200, cors)
   }
 
   if (path === '/api/debug/tv') {
