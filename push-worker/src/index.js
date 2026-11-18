@@ -645,6 +645,22 @@ async function handleFetch(request, env) {
     return json({ debug, live: live ? { state: live.state, score: live.score } : null }, 200, cors)
   }
 
+  if (path === '/api/debug/probe') {
+    const urls = String(url.searchParams.get('urls') || '').split('|').filter(Boolean).slice(0, 8)
+    const out = []
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, { headers: { 'User-Agent': UA } })
+        const txt = res.ok ? await res.text() : ''
+        out.push({ u: u.slice(0, 90), status: res.status, bytes: txt.length,
+          items: parseRss(txt).length })
+      } catch (e) {
+        out.push({ u: u.slice(0, 90), error: String(e?.message || e) })
+      }
+    }
+    return json(out, 200, cors)
+  }
+
   if (path === '/api/debug/tv') {
     const date = url.searchParams.get('date') || new Date().toISOString().slice(0, 10)
     const rows = await fetchTvRows(env, date)
