@@ -26,8 +26,10 @@ Usage:
 
 Output: public/bias.json
   { pair, date, window, bias, confidence, score, events[], windows[],
-    target, briefing, ... }
+    valid_from, valid_until, target, briefing, ... }
 bias: bullish | bearish | neutral | null (null = feed error, target = null).
+valid_from / valid_until = start/end (HH:MM UTC) of the first directional
+  window matching the day's bias; null when the day has no directional lean.
 Direction is a pre-release lean (forecast vs previous), not a surprise tracker.
 """
 from __future__ import annotations
@@ -244,8 +246,25 @@ def build_windows(events: list[dict], window_hours: float) -> list[dict]:
     return out
 
 
+def bias_valid_window(bias: str, windows: list[dict]) -> dict | None:
+    """First directional window matching the day's bias -> {start, end}.
+
+    A directional day (bullish/bearish) always has at least one matching
+    window, since windows are built from the same event votes. Returns None
+    for a neutral day, where no single expiry can be claimed.
+    """
+    if bias not in ("bullish", "bearish"):
+        return None
+    matches = [w for w in windows if w.get("direction") == bias]
+    if not matches:
+        return None
+    matches.sort(key=lambda w: parse_hhmm(w.get("start", "")) or 0)
+    w = matches[0]
+    return {"start": w["start"], "end": w["end"]}
+
+
 def make_briefing(events: list[dict], bias: str, target: dict | None,
-                  windows: list[dict]) -> dict:
+                  windows: list[dict], valid_until: str | None = None) -> dict:
     """Pre-render the daily Web Push briefing text."""
     if not events:
         return {
@@ -253,7 +272,8 @@ def make_briefing(events: list[dict], bias: str, target: dict | None,
             "body": "No High/Medium USD/EUR news today (UTC).",
         }
     first = events[0]["time"]
-    title = (f"EURUSD {bias}: {len(events)} event"
+    headline = f"{bias} until {valid_until}" if valid_until else bias
+    title = (f"EURUSD {headline}: {len(events)} event"
              f"{'s' if len(events) != 1 else ''}, first {first} UTC")
 
     arrow = lambda v: "▲" if v > 0 else "▼" if v < 0 else "±"  # noqa: E731
@@ -274,6 +294,8 @@ def make_briefing(events: list[dict], bias: str, target: dict | None,
         w = " ".join(f"{'▼' if x['direction'] == 'bearish' else '▲'}"
                      f"{x['start']}-{x['end']}" for x in windows[:3])
         lines.append(w)
+    if valid_until and bias in ("bullish", "bearish"):
+        lines.append(f"until {valid_until} UTC")
     if target and bias in ("bullish", "bearish"):
         lines.append(f"aim {target['price']}")
     body = " · ".join(lines)
@@ -373,6 +395,8 @@ def main() -> None:
         "score": None,
         "events": [],
         "windows": [],
+        "valid_from": None,
+        "valid_until": None,
         "target": None,
         "briefing": None,
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -420,17 +444,22 @@ def main() -> None:
     out["confidence"] = round(abs(score) / total_w, 2) if total_w else 0.0
     out["target"] = pick_target(levels_file, bias, date) if levels_file else None
     out["windows"] = build_windows(out["events"], args.window_hours)
+    valid = bias_valid_window(bias, out["windows"])
+    out["valid_from"] = valid["start"] if valid else None
+    out["valid_until"] = valid["end"] if valid else None
     out["briefing"] = make_briefing(out["events"], bias, out["target"],
-                                    out["windows"])
+                                    out["windows"], out["valid_until"])
 
     (PUBLIC / "bias.json").write_text(json.dumps(out, indent=2), encoding="utf-8")
     tgt = out["target"]
     tgt_s = f" -> {tgt['price']} ({tgt['type']}, {tgt['distance_pips']} pips)" if tgt else " -> no target"
     win_s = " ".join(f"{w['direction'][:3]}:{w['start']}-{w['end']}"
                      for w in out["windows"])
+    valid_s = (f" valid={out['valid_from']}-{out['valid_until']}"
+               if out["valid_until"] else " valid=none")
     print(f"wrote public/bias.json date={date} window={args.window} "
           f"bias={bias} score={score} conf={out['confidence']} "
-          f"events={len(events)} windows=[{win_s}]{tgt_s}", flush=True)
+          f"events={len(events)} windows=[{win_s}]{valid_s}{tgt_s}", flush=True)
 
 
 if __name__ == "__main__":

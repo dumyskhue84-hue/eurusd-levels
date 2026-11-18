@@ -26,6 +26,12 @@ footer { margin-top: 24px; opacity:.6; }
 .card.bias.bearish .bias-badge { color:#f85149; }
 .card.bias.neutral .bias-badge { color:#9aa4b2; }
 .bias-conf { font-size:13px; opacity:.85; }
+.bias-head-right { display:flex; align-items:center; gap:8px; }
+.bias-valid { font-size:12px; font-weight:700; padding:3px 8px; border-radius:999px;
+              border:1px solid #2ea04355; background:#0d2818; color:#3fb950;
+              font-variant-numeric:tabular-nums; }
+.card.bias.bearish .bias-valid { border-color:#f8514955; background:#2d1216; color:#f85149; }
+.bias-valid.expired { border-color:#2f3336; background:#1d232a; color:#9aa4b2; }
 .bias-win { font-size:12px; opacity:.7; margin-top:4px; }
 .bias-target { font-size:14px; margin-top:8px; }
 .bias-events { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px; }

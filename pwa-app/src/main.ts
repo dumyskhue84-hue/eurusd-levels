@@ -40,8 +40,17 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) =>
 
 const ARROW: Record<string, string> = { bullish: '▲', bearish: '▼', neutral: '●' }
 
+function fmtRemaining(ms: number): string {
+  if (ms <= 0) return 'window ended'
+  const mins = Math.floor(ms / 60_000)
+  const h = Math.floor(mins / 60)
+  const m = mins % 60
+  return h ? `in ${h}h ${m}m` : `in ${m}m`
+}
+
 const eventById = new Map<string, BiasEvent>()
 let actualsTimer: ReturnType<typeof setInterval> | undefined
+let validTimer: ReturnType<typeof setInterval> | undefined
 
 // Live release values from the push worker (TradingView-backed): paints
 // "a 0.3%" into each event row once the news is out.
@@ -102,6 +111,10 @@ function renderBias(b: BiasFile) {
     return `<span class="win ${w.direction}" title="${esc(t)}">${arrow} ${w.start}–${w.end}</span>`
   }).join('')
   const winHtml = windows ? `<div class="bias-windows">${windows}</div>` : ''
+  const validUntil = b.bias !== 'neutral' ? b.valid_until : null
+  const validHtml = validUntil
+    ? `<span class="bias-valid" id="bias-valid" title="Directional window ends ${validUntil} UTC">until ${validUntil} UTC</span>`
+    : ''
   const events = b.events.map((e) => {
     eventById.set(e.id, e)
     const dir = e.watch ? '○' : e.vote > 0 ? '↑' : '↓'
@@ -132,15 +145,30 @@ function renderBias(b: BiasFile) {
     <article class="card bias ${b.bias}">
       <div class="bias-head">
         <span class="bias-badge">${ARROW[b.bias] ?? '●'} ${b.bias.toUpperCase()}</span>
-        <span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span>
+        <span class="bias-head-right">${validHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
       </div>
-      <div class="bias-win">news window ${win} · score ${b.score}</div>
+      <div class="bias-win">news window ${win} · score ${b.score}${b.valid_from ? ` · active ${b.valid_from}–${validUntil}` : ''}</div>
       <div class="bias-target">${target}</div>
       ${winHtml}
       <ul class="bias-events">${events}</ul>
       ${quiet}
       <div class="bias-note">${esc(b.disclaimer)}</div>
     </article>`
+
+  if (validTimer) clearInterval(validTimer)
+  if (validUntil) {
+    const node = el.querySelector<HTMLSpanElement>('#bias-valid')!
+    const expiry = Date.parse(`${b.date}T${validUntil}:00Z`)
+    const tick = () => {
+      const remain = expiry - Date.now()
+      node.textContent = remain > 0
+        ? `until ${validUntil} UTC · ${fmtRemaining(remain)}`
+        : `ended ${validUntil} UTC`
+      node.classList.toggle('expired', remain <= 0)
+    }
+    tick()
+    validTimer = setInterval(tick, 30_000)
+  }
 }
 
 async function load() {
@@ -189,7 +217,7 @@ async function load() {
     localStorage.setItem('levels-date', data.date)
     if (Notification.permission === 'granted') {
       const biasLabel = bias
-        ? `${bias.bias}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
+        ? `${bias.bias}${bias.valid_until ? ` until ${bias.valid_until}` : ''}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
         : undefined
       notifyNewDay(data.date, data.levels.length, biasLabel)
       // also nudge SW in case page is backgrounded

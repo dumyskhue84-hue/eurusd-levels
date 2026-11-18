@@ -85,6 +85,8 @@ export interface BiasFile {
   score: number | null
   events: BiasEvent[]
   windows: BiasWindow[]
+  valid_from: string | null
+  valid_until: string | null
   target: BiasTarget | null
   briefing: Briefing | null
   generated_at: string

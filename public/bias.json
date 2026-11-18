@@ -87,11 +87,13 @@
     }
   ],
   "windows": [],
+  "valid_from": null,
+  "valid_until": null,
   "target": null,
   "briefing": {
     "title": "EURUSD neutral: 3 events, first 09:00 UTC",
     "body": "09:00 ECB Financial Stability\u2026 \u00b122.4p \u00b7 14:25 ECB President Lagarde S\u2026 \u00b112.7p \u00b7 19:00 FOMC Meeting Minutes \u00b119.2p"
   },
-  "generated_at": "2026-11-18T06:30:50+00:00",
+  "generated_at": "2026-11-18T13:07:59+00:00",
   "disclaimer": "Calendar-based expectation, not a trading signal."
 }
