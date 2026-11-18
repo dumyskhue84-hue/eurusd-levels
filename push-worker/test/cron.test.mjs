@@ -5,7 +5,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {
   matchEvent, outcomeDir, composeOutcome, briefingDue, run,
-  headlineTone, parseRss, scoreHeadlines, biasState, detectBiasChange,
+  headlineTone, bankSign, parseRss, scoreHeadlines, biasState, detectBiasChange,
 } from '../src/index.js'
 
 // ---- fake environment ----
@@ -145,6 +145,9 @@ async function unitTests() {
   assert.equal(headlineTone('Fed to hike rates 50bp'), 'hawkish')
   assert.equal(headlineTone('Fed rejects December rate hike'), 'dovish')
   assert.equal(headlineTone('Fed officials split on rate hike'), null)
+  assert.equal(bankSign("Fed's Waller urges rate hike"), -1, 'Fed headline -> USD side')
+  assert.equal(bankSign('ECB Lagarde signals rate cut'), 1, 'ECB headline -> EUR side')
+  assert.equal(bankSign('Nvidia beats earnings estimates'), 0, 'irrelevant headline ignored')
   const stamp = new Date().toUTCString()
   const rss = `<rss><channel><item><title>Fed's Waller Urges Rate Hike - CNBC</title><pubDate>${stamp}</pubDate></item></channel></rss>`
   assert.equal(parseRss(rss).length, 1, 'RSS item parsed')

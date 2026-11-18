@@ -43,10 +43,12 @@ const TITLE_EQ = [
 
 // Live headline watch: re-scores central-bank tone during the day and fires
 // when it would flip the daily bias (mirrors scripts/daily_bias.py).
-const NEWS_QUERIES = [
-  ['Fed', 'https://news.google.com/rss/search?q=Federal+Reserve+inflation+rates+when:1d&hl=en-US&gl=US&ceid=US:en', -1],
-  ['ECB', 'https://news.google.com/rss/search?q=ECB+inflation+rates+when:1d&hl=en-US&gl=US&ceid=US:en', 1],
+const NEWS_FEEDS = [
+  'https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=10000664',
+  'https://www.investing.com/rss/news_25.rss',
 ]
+const FED_WORDS = /\b(fed|federal reserve|fomc|waller|warsh|powell|williams|daly|barr|kashkari|musalem)\b/
+const ECB_WORDS = /\b(ecb|lagarde|european central bank)\b/
 const HAWKISH = ['rate hike', 'hike', 'hawkish', 'tighten', 'higher rates',
   'higher for longer', 'aggressive', 'shock', 'hot inflation',
   'persistent inflation', 'raise rates', 'rate increase', 'basis point',
@@ -94,6 +96,13 @@ function localizeText(text, date, tz) {
 }
 
 // ---------- live headline scoring ----------
+export function bankSign(text) {
+  const t = String(text || '').toLowerCase()
+  if (FED_WORDS.test(t)) return -1 // hawkish Fed -> USD up -> EURUSD down
+  if (ECB_WORDS.test(t)) return 1  // hawkish ECB -> EUR up -> EURUSD up
+  return 0
+}
+
 export function headlineTone(text) {
   const t = String(text || '').toLowerCase()
   if (NEWS_MIXED.some((k) => t.includes(k))) return null
@@ -180,17 +189,20 @@ async function fetchLiveNews(env, now) {
     if (cached && now.getTime() - cached.t < 300000) return cached
   } catch { /* refetch */ }
   const items = []
-  for (const [, url, sign] of NEWS_QUERIES) {
+  for (const feed of NEWS_FEEDS) {
     let res = null
     for (const init of [{ headers: { 'User-Agent': UA } }, {}]) {
       try {
-        res = await fetch(`${url}&cb=${now.getTime()}`, init)
+        res = await fetch(`${feed}${feed.includes('?') ? '&' : '?'}cb=${now.getTime()}`, init)
         if (res.ok) break
       } catch { /* try next */ }
     }
     if (!res?.ok) continue
     try {
-      for (const it of parseRss(await res.text())) items.push({ ...it, sign })
+      for (const it of parseRss(await res.text())) {
+        const sign = bankSign(it.title)
+        if (sign) items.push({ ...it, sign })
+      }
     } catch { /* skip malformed feed */ }
   }
   if (!items.length) return null
@@ -628,37 +640,18 @@ async function handleFetch(request, env) {
   if (path === '/api/debug/news') {
     const now = new Date()
     const debug = []
-    for (const [bank, url, sign] of NEWS_QUERIES) {
-      for (const init of [{ headers: { 'User-Agent': UA } }, {}]) {
-        try {
-          const res = await fetch(`${url}&cb=${now.getTime()}`, init)
-          const xml = res.ok ? await res.text() : ''
-          debug.push({ bank, status: res.status, bytes: xml.length,
-            items: parseRss(xml).length, ua: !!init.headers })
-          if (res.ok) break
-        } catch (e) {
-          debug.push({ bank, error: String(e?.message || e), ua: !!init.headers })
-        }
+    for (const feed of NEWS_FEEDS) {
+      try {
+        const res = await fetch(feed, { headers: { 'User-Agent': UA } })
+        const xml = res.ok ? await res.text() : ''
+        debug.push({ feed: feed.slice(0, 70), status: res.status,
+          items: parseRss(xml).length })
+      } catch (e) {
+        debug.push({ feed: feed.slice(0, 70), error: String(e?.message || e) })
       }
     }
     const live = await env.SUBS.get(`livebias:${now.toISOString().slice(0, 10)}`, 'json')
     return json({ debug, live: live ? { state: live.state, score: live.score } : null }, 200, cors)
-  }
-
-  if (path === '/api/debug/probe') {
-    const urls = String(url.searchParams.get('urls') || '').split('|').filter(Boolean).slice(0, 8)
-    const out = []
-    for (const u of urls) {
-      try {
-        const res = await fetch(u, { headers: { 'User-Agent': UA } })
-        const txt = res.ok ? await res.text() : ''
-        out.push({ u: u.slice(0, 90), status: res.status, bytes: txt.length,
-          items: parseRss(txt).length })
-      } catch (e) {
-        out.push({ u: u.slice(0, 90), error: String(e?.message || e) })
-      }
-    }
-    return json(out, 200, cors)
   }
 
   if (path === '/api/debug/tv') {
