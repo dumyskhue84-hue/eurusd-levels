@@ -2,10 +2,29 @@ import './style.css'
 import type { LevelsFile, BiasFile, BiasEvent, ActualsFile } from './level-types'
 import { notifyNewDay } from './notify'
 import {
-  PUSH_API, pushSupported, isSubscribed, enablePush, disablePush,
+  PUSH_API, pushSupported, isSubscribed, enablePush, disablePush, syncPushTz,
 } from './push'
 import { initInstallButton } from './install'
 import { initPWA } from './pwa'
+
+const TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const clockFmt = new Intl.DateTimeFormat(undefined, {
+  hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+})
+const TZ_LABEL = new Intl.DateTimeFormat(undefined, { timeZoneName: 'short' })
+  .formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value || 'local'
+
+function localTime(hhmm: string | null | undefined, date: string): string {
+  if (!hhmm) return '—'
+  let iso = `${date}T${hhmm}:00Z`
+  if (hhmm === '24:00') {
+    const next = new Date(`${date}T00:00:00Z`)
+    next.setUTCDate(next.getUTCDate() + 1)
+    iso = next.toISOString().replace('.000Z', 'Z')
+  }
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? hhmm : clockFmt.format(d)
+}
 
 const app = document.querySelector<HTMLDivElement>('#app')!
 app.innerHTML = `
@@ -28,7 +47,7 @@ app.innerHTML = `
     </header>
     <section id="bias"></section>
     <section id="cards"></section>
-    <footer><small>UTC day boundary (forex). Levels only, no entries. Offline cached.</small></footer>
+    <footer><small>Times in ${TZ_LABEL} (${TIME_ZONE}). Forex day boundary 00:00 UTC. Levels only, no entries. Offline cached.</small></footer>
   </main>
 `
 
@@ -73,7 +92,7 @@ async function pollActuals(date: string): Promise<void> {
       const d = a.dir ?? 0
       act.textContent = `a ${val}`
       act.className = `act ${d > 0 ? 'ok' : d < 0 ? 'bad' : 'flat'}`
-      act.title = `released ${a.time} UTC`
+      act.title = `released ${localTime(a.time, date)} ${TZ_LABEL}`
     }
   } catch {
     // offline or worker unreachable — retry on next tick
@@ -100,7 +119,7 @@ async function loadBias(): Promise<BiasFile | null> {
 function renderBias(b: BiasFile) {
   if (!b.bias) return
   const el = document.querySelector('#bias')!
-  const win = `${b.window.start}–${b.window.end} ${b.window.tz}`
+  const win = `${localTime(b.window.start, b.date)}–${localTime(b.window.end, b.date)} ${TZ_LABEL}`
   const target = b.target
     ? `expect move toward <strong>${b.target.price.toFixed(5)}</strong> ${esc(b.target.type)}` +
       ` · ${b.target.distance_pips} pips · approach ${b.target.approach_side.replace('_', ' ')}`
@@ -108,12 +127,13 @@ function renderBias(b: BiasFile) {
   const windows = (b.windows ?? []).map((w) => {
     const arrow = w.direction === 'bearish' ? '▼' : '▲'
     const t = `${w.cause}${w.target_price != null ? ` → ${w.target_price.toFixed(5)} (${w.target_pips}p)` : ''}`
-    return `<span class="win ${w.direction}" title="${esc(t)}">${arrow} ${w.start}–${w.end}</span>`
+    return `<span class="win ${w.direction}" title="${esc(t)}">${arrow} ${localTime(w.start, b.date)}–${localTime(w.end, b.date)}</span>`
   }).join('')
   const winHtml = windows ? `<div class="bias-windows">${windows}</div>` : ''
   const validUntil = b.bias !== 'neutral' ? b.valid_until : null
+  const localUntil = localTime(validUntil, b.date)
   const validHtml = validUntil
-    ? `<span class="bias-valid" id="bias-valid" title="Directional window ends ${validUntil} UTC">until ${validUntil} UTC</span>`
+    ? `<span class="bias-valid" id="bias-valid" title="Directional window ends ${localUntil} ${TZ_LABEL}">until ${localUntil} ${TZ_LABEL}</span>`
     : ''
   const basisLabel = b.basis === 'calendar+news' ? 'calendar + news'
     : b.basis === 'news' ? 'headlines'
@@ -139,7 +159,7 @@ function renderBias(b: BiasFile) {
       ? `<span class="nums">${e.actual ? `a ${esc(e.actual)} · ` : ''}f ${esc(e.forecast) || '—'} · p ${esc(e.previous) || '—'}${e.proxy ? ' · proxy' : ''}</span>`
       : ''
     return `<li class="ev${e.watch ? ' is-watch' : ''}" data-eid="${esc(e.id)}">
-      <span class="ev-time">${e.time}</span>
+      <span class="ev-time" title="${e.time} UTC">${localTime(e.time, b.date)}</span>
       <span class="imp ${e.impact.toLowerCase()}">${e.impact[0]}</span>
       <span class="ev-title">${e.country} · ${esc(e.title)}</span>
       <span class="ev-tgt ${tgtCls}" title="${esc(tgtTitle)}">${tgtTxt}</span>
@@ -148,7 +168,7 @@ function renderBias(b: BiasFile) {
     </li>`
   }).join('')
   const quiet = b.events.length === 0
-    ? '<div class="bias-note">No High/Medium market-moving news today (UTC).</div>'
+    ? '<div class="bias-note">No High/Medium market-moving news today.</div>'
     : ''
   el.innerHTML = `
     <article class="card bias ${b.bias}">
@@ -156,7 +176,7 @@ function renderBias(b: BiasFile) {
         <span class="bias-badge">${ARROW[b.bias] ?? '●'} ${b.bias.toUpperCase()}</span>
         <span class="bias-head-right">${validHtml}${basisHtml}<span class="bias-conf">${Math.round((b.confidence ?? 0) * 100)}% conf</span></span>
       </div>
-      <div class="bias-win">news window ${win} · calendar ${b.score}${b.news ? ` · headlines ${b.news.score}` : ''}${b.valid_from ? ` · active ${b.valid_from}–${validUntil}` : ''}</div>
+      <div class="bias-win">news window ${win} · calendar ${b.score}${b.news ? ` · headlines ${b.news.score}` : ''}${b.valid_from ? ` · active ${localTime(b.valid_from, b.date)}–${localUntil}` : ''}</div>
       <div class="bias-target">${target}</div>
       ${newsHtml}
       ${winHtml}
@@ -172,8 +192,8 @@ function renderBias(b: BiasFile) {
     const tick = () => {
       const remain = expiry - Date.now()
       node.textContent = remain > 0
-        ? `until ${validUntil} UTC · ${fmtRemaining(remain)}`
-        : `ended ${validUntil} UTC`
+        ? `until ${localUntil} ${TZ_LABEL} · ${fmtRemaining(remain)}`
+        : `ended ${localUntil} ${TZ_LABEL}`
       node.classList.toggle('expired', remain <= 0)
     }
     tick()
@@ -227,7 +247,7 @@ async function load() {
     localStorage.setItem('levels-date', data.date)
     if (Notification.permission === 'granted') {
       const biasLabel = bias
-        ? `${bias.bias}${bias.valid_until ? ` until ${bias.valid_until}` : ''}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
+        ? `${bias.bias}${bias.valid_until ? ` until ${localTime(bias.valid_until, bias.date)} ${TZ_LABEL}` : ''}${bias.target ? ` → ${bias.target.price.toFixed(5)}` : ''}`
         : undefined
       notifyNewDay(data.date, data.levels.length, biasLabel)
       // also nudge SW in case page is backgrounded
@@ -247,7 +267,9 @@ async function refreshNotifyBtn(): Promise<void> {
     notifyBtn.disabled = true
     return
   }
-  notifyBtn.textContent = (await isSubscribed())
+  const on = await isSubscribed()
+  if (on) await syncPushTz()
+  notifyBtn.textContent = on
     ? 'News alerts ON · tap to turn off'
     : 'Enable news alerts'
   notifyBtn.disabled = false

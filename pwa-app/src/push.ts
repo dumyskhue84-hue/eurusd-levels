@@ -34,6 +34,25 @@ export async function isSubscribed(): Promise<boolean> {
   }
 }
 
+// Re-send the device timezone for an existing subscription (best effort).
+export async function syncPushTz(): Promise<void> {
+  if (!pushSupported()) return
+  try {
+    const reg = await navigator.serviceWorker.getRegistration()
+    const sub = await reg?.pushManager.getSubscription()
+    if (!sub) return
+    await fetch(`${PUSH_API}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subscription: sub.toJSON(),
+        page: location.origin,
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      }),
+    })
+  } catch { /* best effort */ }
+}
+
 export type EnableResult = 'ok' | 'denied' | 'unsupported' | 'network'
 
 export async function enablePush(): Promise<EnableResult> {
@@ -52,7 +71,11 @@ export async function enablePush(): Promise<EnableResult> {
     const res = await fetch(`${PUSH_API}/api/subscribe`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription: sub.toJSON(), page: location.origin }),
+      body: JSON.stringify({
+        subscription: sub.toJSON(),
+        page: location.origin,
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+      }),
     })
     if (!res.ok) {
       await sub.unsubscribe().catch(() => undefined)

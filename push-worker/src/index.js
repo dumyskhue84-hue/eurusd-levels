@@ -48,6 +48,32 @@ const hhmmToMin = (s) => Number(s.slice(0, 2)) * 60 + Number(s.slice(3, 5))
 const minToHHMM = (m) =>
   `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
 
+function tzLabel(tz) {
+  try {
+    return new Intl.DateTimeFormat('en-GB', { timeZone: tz, timeZoneName: 'short' })
+      .formatToParts(new Date()).find((p) => p.type === 'timeZoneName')?.value || ''
+  } catch { return '' }
+}
+
+function localTimeUTC(date, hhmm, tz) {
+  let d = new Date(`${date}T${hhmm}:00Z`)
+  if (hhmm === '24:00') d = new Date(Date.parse(`${date}T00:00:00Z`) + 86400000)
+  if (Number.isNaN(d.getTime())) return hhmm
+  try {
+    return new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).format(d)
+  } catch { return hhmm }
+}
+
+function localizeText(text, date, tz) {
+  if (!text || !tz) return text
+  const label = tzLabel(tz)
+  return text
+    .replace(/\b(\d{2}):(\d{2})\b/g, (_, h, m) => localTimeUTC(date, `${h}:${m}`, tz))
+    .replace(/\bUTC\b/g, label || '')
+}
+
 function parseNum(s) {
   if (s == null) return null
   const t = String(s).replace(/,/g, '').trim()
@@ -124,6 +150,25 @@ async function broadcast(env, subs, msg) {
     }
   }
   for (const s of dead) await env.SUBS.delete(`sub:${s.endpoint}`)
+  return ok
+}
+
+// Send the same message per subscriber timezone (tz captured at subscribe).
+async function broadcastLocalized(env, subs, msg, date) {
+  const groups = new Map()
+  for (const s of subs) {
+    const tz = s.tz || 'UTC'
+    if (!groups.has(tz)) groups.set(tz, [])
+    groups.get(tz).push(s)
+  }
+  let ok = 0
+  for (const [tz, group] of groups) {
+    ok += await broadcast(env, group, {
+      ...msg,
+      title: localizeText(msg.title, date, tz),
+      body: localizeText(msg.body, date, tz),
+    })
+  }
   return ok
 }
 
@@ -286,7 +331,7 @@ async function processOutcomes(env, bias, today, now, subs) {
         { expirationTtl: TTL_DAY })
       continue
     }
-    const n = await broadcast(env, subs, msg)
+    const n = await broadcastLocalized(env, subs, msg, today)
     if (n > 0) {
       await env.SUBS.put(doneKey, JSON.stringify({ at: now.toISOString() }),
         { expirationTtl: TTL_DAY })
@@ -324,12 +369,12 @@ export async function run(env, opts = {}) {
           await env.SUBS.put(sentKey, JSON.stringify({ skipped: 'stale' }),
             { expirationTtl: TTL_DAY })
         } else {
-          const n = await broadcast(env, subs, {
+          const n = await broadcastLocalized(env, subs, {
             title: bias.briefing.title,
             body: bias.briefing.body,
             tag: `briefing-${today}`,
             url: '/',
-          })
+          }, today)
           if (n > 0) {
             await env.SUBS.put(sentKey, JSON.stringify({ at: now.toISOString(), n }),
               { expirationTtl: TTL_DAY })
@@ -385,11 +430,12 @@ async function handleFetch(request, env) {
     if (!sub?.endpoint?.startsWith('https://') || !sub.keys?.p256dh || !sub.keys?.auth) {
       return json({ error: 'bad subscription' }, 400, cors)
     }
-    await env.SUBS.put(`sub:${sub.endpoint}`, JSON.stringify({
-      ...sub,
-      created_at: new Date().toISOString(),
-      page: typeof body.page === 'string' ? body.page.slice(0, 200) : '',
-    }))
+      await env.SUBS.put(`sub:${sub.endpoint}`, JSON.stringify({
+        ...sub,
+        created_at: new Date().toISOString(),
+        page: typeof body.page === 'string' ? body.page.slice(0, 200) : '',
+        tz: typeof body.tz === 'string' && body.tz.length <= 64 ? body.tz : 'UTC',
+      }))
     return json({ ok: true }, 200, cors)
   }
 
